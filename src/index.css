@@ -4,24 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* KAMUS WARNA UTAMA */
 :root {
-  /* Warna Hijau Sage (Cashew) - Default */
+
   --color-primary: #4A6B4A;
   --color-primary-soft: #E3ECE3;
   --color-primary-dark: #2F4F2F;
 
-  /* Warna Background (Mode Terang) */
   --color-background: #FAFAFA;
   --color-surface: #FFFFFF;
 }
 
-/* KAMUS WARNA (MODE GELAP) */
 .dark {
   --color-background: #121212;
   --color-surface: #1E1E1E;
   
-  /* Saat gelap, warna hijau dibuat agak transparan agar enak dimata */
   --color-primary-soft: rgba(74, 107, 74, 0.3);
   --color-primary-dark: #86efac;
 }
