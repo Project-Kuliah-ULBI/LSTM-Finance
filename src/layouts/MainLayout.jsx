@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { 
   LayoutGrid, Receipt, PieChart, PiggyBank, Clock, Calculator, 
-  ChevronRight, ChevronLeft, Settings 
+  ChevronRight, ChevronLeft, Settings, Wallet, Handshake 
 } from 'lucide-react';
 
 const MainLayout = () => {
   // State Sidebar
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   // --- LOGIKA JAM ---
   const [date, setDate] = useState(new Date());
@@ -22,12 +22,14 @@ const MainLayout = () => {
 
   // Menu
   const menus = [
-    { name: 'Beranda', icon: <LayoutGrid size={24} />, path: '/' },
-    { name: 'Transaksi', icon: <Receipt size={24} />, path: '/transactions' },
-    { name: 'Anggaran', icon: <PieChart size={24} />, path: '/budget' },
-    { name: 'Budgeting', icon: <Calculator size={24} />, path: '/budgeting' },
-    { name: 'Tujuan', icon: <PiggyBank size={24} />, path: '/goals' },
-    { name: 'Jadwal', icon: <Clock size={24} />, path: '/scheduled' },
+    { name: 'Beranda', icon: <LayoutGrid size={22} />, path: '/' },
+    { name: 'Dompet', icon: <Wallet size={22} />, path: '/wallets' },
+    { name: 'Transaksi', icon: <Receipt size={22} />, path: '/transactions' },
+    { name: 'Anggaran', icon: <PieChart size={22} />, path: '/budget' },
+    { name: 'Budgeting', icon: <Calculator size={22} />, path: '/budgeting' },
+    { name: 'Utang Piutang', icon: <Handshake size={22} />, path: '/debts' },
+    { name: 'Tujuan', icon: <PiggyBank size={22} />, path: '/goals' },
+    { name: 'Jadwal', icon: <Clock size={22} />, path: '/scheduled' },
   ];
 
   return (
@@ -39,51 +41,48 @@ const MainLayout = () => {
           hidden md:flex flex-col fixed h-full z-20 
           bg-surface border-r border-gray-100 dark:border-gray-800 
           transition-all duration-300 ease-in-out
-          ${expanded ? 'w-80' : 'w-24'} 
+          ${expanded ? 'w-72' : 'w-24'} 
         `}
       >
         
-        {/* HEADER: Tombol Toggle (Mirip Back Button) */}
-        <div className={`h-24 flex items-center ${expanded ? 'justify-start pl-6' : 'justify-center'} transition-all`}>
+        {/* HEADER: Tombol Toggle */}
+        <div className={`h-20 flex items-center ${expanded ? 'justify-start pl-6' : 'justify-center'} transition-all`}>
           <button 
             onClick={() => setExpanded(!expanded)}
-            className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center transition-all"
+            className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center transition-all"
             title={expanded ? "Kecilkan Menu" : "Besarkan Menu"}
           >
-            {expanded ? <ChevronLeft size={24} strokeWidth={2.5} /> : <ChevronRight size={24} strokeWidth={2.5} />}
+            {expanded ? <ChevronLeft size={20} strokeWidth={2.5} /> : <ChevronRight size={20} strokeWidth={2.5} />}
           </button>
         </div>
 
-        {/* JAM DIGITAL (TAMPILAN BARU SESUAI GAMBAR) */}
+        {/* JAM DIGITAL (Diperbaiki agar tidak terpotong) */}
         <div className={`
-            mb-8 transition-all duration-300 overflow-hidden whitespace-nowrap flex flex-col items-center justify-center
+            mb-6 transition-all duration-300 overflow-hidden whitespace-nowrap flex flex-col items-center justify-center
             ${expanded ? 'opacity-100 max-h-64 scale-100' : 'opacity-0 max-h-0 scale-95 hidden'}
         `}>
-          {/* JAM: Besar & Hitam Tebal */}
-          <h1 className="text-6xl font-black tracking-tight text-gray-900 dark:text-white mb-2">
+          {/* Ukuran font diturunkan ke text-5xl agar pas di container */}
+          <h1 className="text-5xl font-black tracking-tight text-gray-900 dark:text-white mb-1 leading-none">
             {timeString}
           </h1>
-          
-          {/* HARI: Abu-abu Tebal */}
-          <p className="text-2xl font-bold text-gray-400 dark:text-gray-500">
+          <p className="text-xl font-bold text-gray-400 dark:text-gray-500">
             {dayString}
           </p>
-          
-          {/* TANGGAL: Abu-abu Biasa */}
-          <p className="text-lg text-gray-400 dark:text-gray-600 mt-1">
+          <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">
             {dateString}
           </p>
         </div>
 
-        {/* MENU */}
-        <nav className="flex-1 px-4 space-y-3 flex flex-col">
+        {/* MENU NAVIGASI */}
+        <nav className="flex-1 px-4 space-y-1.5 flex flex-col">
           {menus.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
+              // UKURAN TAB DIKECILKAN: py-3 dan px-5 (sebelumnya py-3.5 px-6)
               className={({ isActive }) => `
-                flex items-center gap-4 p-4 rounded-[20px] transition-all duration-300 group relative
-                ${expanded ? 'justify-start px-6' : 'justify-center w-14 h-14 mx-auto'}
+                flex items-center gap-3 rounded-[18px] transition-all duration-300 group relative
+                ${expanded ? 'justify-start py-3 px-5 w-full' : 'justify-center w-12 h-12 mx-auto p-0'}
                 ${isActive 
                   ? 'bg-primary text-white shadow-lg shadow-primary/30' 
                   : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary'}
@@ -102,19 +101,19 @@ const MainLayout = () => {
           ))}
         </nav>
 
-        {/* FOOTER */}
-        <div className="p-4 mb-4 flex flex-col">
+        {/* FOOTER (Pengaturan) */}
+        <div className="p-4 mb-2 flex flex-col">
            <NavLink 
               to="/settings"
               className={({ isActive }) => `
-                flex items-center gap-4 p-4 rounded-[20px] transition-all
-                ${expanded ? 'justify-start px-6' : 'justify-center w-14 h-14 mx-auto'}
+                flex items-center gap-3 rounded-[18px] transition-all
+                ${expanded ? 'justify-start py-3 px-5 w-full' : 'justify-center w-12 h-12 mx-auto p-0'}
                 ${isActive 
                   ? 'bg-primary text-white shadow-lg shadow-primary/30' 
                   : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary'}
               `}
            >
-              <Settings size={24} />
+              <Settings size={22} />
               <span className={`text-sm font-bold whitespace-nowrap transition-all duration-300 origin-left ${expanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 hidden'}`}>
                 Pengaturan
               </span>
@@ -123,7 +122,7 @@ const MainLayout = () => {
 
       </aside>
 
-      {/* MOBILE NAV (TETAP SAMA) */}
+      {/* MOBILE NAV (Tetap Sama) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-gray-200 dark:border-gray-800 z-50 px-6 py-3 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         {menus.map((item) => (
           <NavLink
@@ -139,7 +138,8 @@ const MainLayout = () => {
         ))}
       </div>
 
-      <main className={`flex-1 p-6 md:p-12 pb-24 md:pb-12 relative z-10 w-full overflow-x-hidden transition-all duration-300 ml-0 ${expanded ? 'md:ml-80' : 'md:ml-24'}`}>
+      {/* KONTEN UTAMA */}
+      <main className={`flex-1 p-6 md:p-12 pb-24 md:pb-12 relative z-10 w-full overflow-x-hidden transition-all duration-300 ml-0 ${expanded ? 'md:ml-72' : 'md:ml-24'}`}>
         <div className="md:hidden mb-6">
            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{timeString}</h1>
            <p className="text-gray-500 text-sm dark:text-gray-400">{dayString}, {dateString}</p>
