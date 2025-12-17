@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
+// const pool = require('../config/db');
+const pool = require('../config/supa');
 const multer = require('multer');
 const { Parser } = require('json2csv');
 const csv = require('csv-parser');

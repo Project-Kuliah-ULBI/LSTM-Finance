@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
+// const pool = require('../config/db');
+const pool = require('../config/supa');
 const auth = require('../middleware/authMiddleware');
 
 // GET: Ambil semua transaksi (Gabung dengan tabel kategori & akun)

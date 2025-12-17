@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
+// const pool = require('../config/db');
+const pool = require('../config/supa');
 
 // GET: Ambil semua kategori untuk dropdown
 router.get('/:user_id', async (req, res) => {
