@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+
+  --color-primary: #4A6B4A;
+  --color-primary-soft: #E3ECE3;
+  --color-primary-dark: #2F4F2F;
+
+  --color-background: #FAFAFA;
+  --color-surface: #FFFFFF;
+}
+
+.dark {
+  --color-background: #121212;
+  --color-surface: #1E1E1E;
+  
+  --color-primary-soft: rgba(74, 107, 74, 0.3);
+  --color-primary-dark: #86efac;
+}
+
+body {
+  @apply bg-background text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300;
+}

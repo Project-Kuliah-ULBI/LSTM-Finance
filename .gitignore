@@ -1,0 +1,46 @@
+# --- Dependencies (Wajib di-ignore agar upload cepat) ---
+node_modules/
+package-lock.json
+# ^ (Opsional: package-lock boleh di-upload, tapi node_modules JANGAN)
+
+# --- Environment Variables (SANGAT PENTING: KEAMANAN) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- Logs & Debug ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+*.log
+npm-debug.log
+
+# --- Uploads & Temporary Data ---
+# Folder tempat simpan CSV sementara (Multer)
+uploads/
+# File CSV hasil export atau dummy data
+*.csv
+# File Excel/Spreadsheet
+*.xlsx
+*.xls
+
+# --- Python / ML Service (Jika folder ml-service ikut di-push) ---
+__pycache__/
+*.py[cod]
+*$py.class
+# Virtual Environment
+venv/
+env/
+# Model File (Jika ukurannya besar >100MB, GitHub akan menolak)
+# Jika <100MB boleh dihapus tanda pagarnya agar ikut ke-upload
+# *.h5
+# *.pkl
+
+# --- IDE & OS Files (File sampah sistem) ---
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
