@@ -53,7 +53,7 @@ function App() {
   };
 
   return (
-    <GoogleOAuthProvider clientId="1038636738852-gm249c5hdn11mduore9uv3aeekltgade.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
