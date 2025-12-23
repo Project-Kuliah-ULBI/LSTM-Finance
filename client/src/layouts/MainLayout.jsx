@@ -8,7 +8,7 @@ import {
 const MainLayout = () => {
   // State Sidebar
   const [expanded, setExpanded] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false); // Tambahan untuk Mobile
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // --- LOGIKA JAM ---
   const [date, setDate] = useState(new Date());
@@ -21,7 +21,7 @@ const MainLayout = () => {
   const dayString = date.toLocaleDateString('id-ID', { weekday: 'long' });
   const dateString = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  // Menu
+  // Menu Items
   const menus = [
     { name: 'Beranda', icon: <LayoutGrid size={22} />, path: '/' },
     { name: 'Dompet', icon: <Wallet size={22} />, path: '/wallets' },
@@ -34,7 +34,8 @@ const MainLayout = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-[#121212] font-sans transition-colors duration-300">
+    // FIX 1: overflow-x-hidden di wrapper utama
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#121212] font-sans transition-colors duration-300 relative overflow-x-hidden">
       
       {/* --- MOBILE HEADER (Untuk HP) --- */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-[#1E1E1E] border-b border-gray-100 dark:border-gray-800 z-50 px-4 flex items-center justify-between shadow-sm">
@@ -59,20 +60,18 @@ const MainLayout = () => {
         `}
       >
         
-        {/* HEADER: Tombol Toggle (POSISI DIPERBAIKI) */}
-        {/* Menggunakan 'justify-start pl-6' agar SELALU di kiri */}
+        {/* HEADER: Tombol Toggle */}
         <div className="h-20 flex items-center justify-start pl-6 transition-all">
           <button 
             onClick={() => setExpanded(!expanded)}
             className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center transition-all shadow-sm"
             title={expanded ? "Kecilkan Menu" : "Besarkan Menu"}
           >
-            {/* Ikon Panah */}
             {expanded ? <ChevronLeft size={20} strokeWidth={2.5} /> : <ChevronRight size={20} strokeWidth={2.5} />}
           </button>
         </div>
 
-        {/* JAM DIGITAL */}
+        {/* JAM DIGITAL (Sidebar) */}
         <div className={`
             px-4 text-center mb-6 transition-all duration-300 overflow-hidden whitespace-nowrap flex flex-col items-center justify-center
             ${expanded ? 'opacity-100 max-h-40' : 'opacity-0 max-h-0 hidden'}
@@ -87,7 +86,8 @@ const MainLayout = () => {
         </div>
 
         {/* MENU NAVIGASI */}
-        <nav className="flex-1 px-4 space-y-1.5 flex flex-col overflow-y-auto custom-scrollbar">
+        {/* FIX 2: overflow-x-hidden di sini agar teks menu tidak membuat scroll saat sidebar mengecil */}
+        <nav className="flex-1 px-4 space-y-1.5 flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar">
           {menus.map((item) => (
             <NavLink
               key={item.path}
@@ -107,7 +107,7 @@ const MainLayout = () => {
                 {item.name}
               </span>
 
-              {/* Tooltip saat Collapsed */}
+              {/* Tooltip (Hanya saat menu kecil) */}
               {!expanded && (
                 <div className="absolute left-14 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-xl border border-gray-700">
                   {item.name}
@@ -145,7 +145,8 @@ const MainLayout = () => {
 
       {/* --- KONTEN UTAMA --- */}
       <main className={`
-        flex-1 p-6 md:p-12 pb-24 md:pb-12 relative z-10 w-full overflow-x-hidden transition-all duration-300 ml-0
+        flex-1 p-6 md:p-12 pb-24 md:pb-12 min-h-screen relative z-10 w-full 
+        transition-all duration-300 ml-0 overflow-x-hidden
         ${expanded ? 'md:ml-72' : 'md:ml-24'}
       `}>
         {/* Header Mobile (Tampil Jam saat menu mobile) */}
