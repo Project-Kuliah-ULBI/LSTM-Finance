@@ -6,14 +6,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/authMiddleware');
 const { OAuth2Client } = require('google-auth-library');
-const client = new OAuth2Client("YOUR_GOOGLE_CLIENT_ID");
+const client = new OAuth2Client("Your-Google-Client-ID-Here");
 
 router.post('/google', async (req, res) => {
   const { token } = req.body;
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: "YOUR_GOOGLE_CLIENT_ID",
+      audience: "Your-Google-Client-ID-Here",
     });
 
     const { email, name: googleName, sub: google_id } = ticket.getPayload();

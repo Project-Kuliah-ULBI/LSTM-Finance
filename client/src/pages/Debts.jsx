@@ -46,12 +46,12 @@ const Debts = () => {
 
   const handleOpenModal = () => {
      setFormData({
-        person_name: "",
-        amount: "",
-        account_id: "",
-        type: "RECEIVABLE",
-        due_date: new Date().toISOString().split("T")[0],
-        description: "",
+       person_name: "",
+       amount: "",
+       account_id: "",
+       type: "RECEIVABLE",
+       due_date: new Date().toISOString().split("T")[0],
+       description: "",
      });
      setIsModalOpen(true);
      setIsAccountOpen(false);
@@ -99,10 +99,9 @@ const Debts = () => {
   const selectedAccount = accounts.find((a) => String(a.account_id) === String(formData.account_id));
 
   return (
-    // PERBAIKAN: Layout Container Konsisten (max-w-5xl)
     <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
       
-      {/* HEADER: Font & Margin Konsisten */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -128,7 +127,7 @@ const Debts = () => {
           <p className="text-gray-400 font-medium">Belum ada catatan transaksi.</p>
         </div>
       ) : (
-        // GRID CARD: Style diperhalus
+        // GRID CARD
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {debts.map((d) => {
             const isPaid = d.status === "PAID";
@@ -203,54 +202,66 @@ const Debts = () => {
         </div>
       )}
 
-      {/* MODAL FORM */}
+      {/* --- MODAL FORM (COMPACT & CENTERED) --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-          <div className="bg-white dark:bg-[#1E1E1E] w-full max-w-md rounded-3xl relative z-10 p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Tambah Catatan</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X size={20}/></button>
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsModalOpen(false)}></div>
+          
+          <div className="bg-white dark:bg-[#1E1E1E] w-full max-w-sm md:max-w-md rounded-3xl relative z-10 shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Tambah Catatan</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+                <X size={20}/>
+              </button>
             </div>
 
-            <div className="overflow-y-auto custom-scrollbar flex-1">
-              <form id="debt-form" onSubmit={handleSave} className="space-y-5 px-1 pb-1">
-                <div className="grid grid-cols-2 gap-3 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+            {/* Body Scrollable */}
+            <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
+              <form id="debt-form" onSubmit={handleSave} className="space-y-4">
+                
+                {/* Switch Type */}
+                <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
                   <button type="button" onClick={() => setFormData({ ...formData, type: "RECEIVABLE" })}
-                    className={`py-3 rounded-lg font-bold text-xs transition-all ${formData.type === "RECEIVABLE" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>
+                    className={`py-2.5 rounded-lg font-bold text-xs transition-all ${formData.type === "RECEIVABLE" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>
                     PIUTANG
                   </button>
                   <button type="button" onClick={() => setFormData({ ...formData, type: "DEBT" })}
-                    className={`py-3 rounded-lg font-bold text-xs transition-all ${formData.type === "DEBT" ? "bg-white dark:bg-gray-700 shadow-sm text-orange-600" : "text-gray-400 hover:text-gray-600"}`}>
+                    className={`py-2.5 rounded-lg font-bold text-xs transition-all ${formData.type === "DEBT" ? "bg-white dark:bg-gray-700 shadow-sm text-orange-600" : "text-gray-400 hover:text-gray-600"}`}>
                     HUTANG
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Nama Kontak</label>
-                  <input type="text" placeholder="Nama teman..." value={formData.person_name} onChange={e => setFormData({ ...formData, person_name: e.target.value })}
-                    className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-xl outline-none dark:text-white font-medium focus:ring-2 focus:ring-primary/50" required />
+                {/* Input Fields */}
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nama Kontak</label>
+                    <input type="text" placeholder="Nama teman..." value={formData.person_name} onChange={e => setFormData({ ...formData, person_name: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 p-3.5 rounded-xl outline-none dark:text-white font-medium text-sm focus:ring-2 focus:ring-primary/50" required />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nominal (Rp)</label>
+                    <input type="number" placeholder="0" value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 p-3.5 rounded-xl outline-none dark:text-white font-bold text-base focus:ring-2 focus:ring-primary/50" required />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Nominal (Rp)</label>
-                  <input type="number" placeholder="0" value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })}
-                    className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-xl outline-none dark:text-white font-bold text-lg focus:ring-2 focus:ring-primary/50" required />
-                </div>
-
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Sumber Dana</label>
-                  <div onClick={() => setIsAccountOpen(!isAccountOpen)} className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-xl cursor-pointer flex justify-between items-center border border-transparent hover:border-primary/30 transition-all">
-                    <span className={`font-medium ${!selectedAccount ? "text-gray-400" : "dark:text-white"}`}>
+                {/* Dropdown Sumber Dana */}
+                <div className="space-y-1 relative">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Sumber Dana</label>
+                  <div onClick={() => setIsAccountOpen(!isAccountOpen)} className="w-full bg-gray-50 dark:bg-gray-800 h-[50px] px-4 rounded-xl cursor-pointer flex justify-between items-center border border-transparent hover:border-primary/30 transition-all">
+                    <span className={`font-medium text-sm truncate ${!selectedAccount ? "text-gray-400" : "dark:text-white"}`}>
                       {selectedAccount ? selectedAccount.account_name : "Pilih Dompet..."}
                     </span>
                     <ChevronDown size={18} className="text-gray-400" />
                   </div>
                   {isAccountOpen && (
-                    <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in zoom-in-95">
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in zoom-in-95 max-h-40 overflow-y-auto">
                       {accounts.map((a) => (
                         <div key={a.account_id} onClick={() => { setFormData({ ...formData, account_id: a.account_id }); setIsAccountOpen(false); }}
-                          className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center text-sm font-medium dark:text-gray-200">
+                          className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center text-xs font-medium dark:text-gray-200 border-b last:border-0 dark:border-gray-800">
                           {a.account_name}
                           {String(formData.account_id) === String(a.account_id) && <Check size={16} className="text-primary" />}
                         </div>
@@ -259,16 +270,18 @@ const Debts = () => {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Jatuh Tempo</label>
+                {/* Date Picker */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Jatuh Tempo</label>
                   <input type="date" value={formData.due_date} onChange={e => setFormData({ ...formData, due_date: e.target.value })}
-                    className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-xl outline-none dark:text-white font-medium focus:ring-2 focus:ring-primary/50" required />
+                    className="w-full bg-gray-50 dark:bg-gray-800 p-3.5 rounded-xl outline-none dark:text-white font-medium text-sm focus:ring-2 focus:ring-primary/50" required />
                 </div>
               </form>
             </div>
 
-            <div className="pt-4 border-t border-gray-100 dark:border-gray-800 mt-2">
-              <button type="submit" form="debt-form" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 transition-all active:scale-[0.98]">
+            {/* Footer */}
+            <div className="p-5 border-t border-gray-100 dark:border-gray-800">
+              <button type="submit" form="debt-form" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/30 transition-all active:scale-[0.98] text-xs uppercase tracking-wide">
                 Simpan Data
               </button>
             </div>

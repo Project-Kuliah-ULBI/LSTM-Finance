@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   Mail,
@@ -19,6 +19,7 @@ import {
   Loader2,
   Lock,
   ShieldCheck,
+  ChevronDown 
 } from "lucide-react";
 import axios from "axios";
 
@@ -31,7 +32,7 @@ const Settings = ({ onLogout }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // State tambahan untuk Password
+  // State Password
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -40,8 +41,11 @@ const Settings = ({ onLogout }) => {
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState("EXPENSE");
   const [isLoadingCats, setIsLoadingCats] = useState(false);
+  
+  // State Custom Dropdown
+  const [isTypeOpen, setIsTypeOpen] = useState(false);
 
-  const fileInputRef = React.useRef(null);
+  const fileInputRef = useRef(null);
   const userId = localStorage.getItem("user_id");
 
   // Daftar Warna Preset
@@ -56,7 +60,6 @@ const Settings = ({ onLogout }) => {
     { name: "Amber", hex: "#F59E0B" },
   ];
 
-  // --- FUNGSI UTILS ---
   const formatRp = (num) => "Rp " + Number(num).toLocaleString("id-ID");
 
   // --- LOGIKA MANAJEMEN KATEGORI ---
@@ -167,7 +170,7 @@ const Settings = ({ onLogout }) => {
     }
   };
 
-  // --- LOGIKA EKSPOR & IMPOR ---
+  // --- LOGIKA EKSPOR CSV ---
   const handleExportCSV = async () => {
     if (!window.confirm("Download riwayat transaksi ke CSV?")) return;
     setIsProcessing(true);
@@ -217,6 +220,7 @@ const Settings = ({ onLogout }) => {
     }
   };
 
+  // --- LOGIKA IMPOR CSV ---
   const triggerImport = () => fileInputRef.current.click();
 
   const handleFileChange = async (e) => {
@@ -235,11 +239,28 @@ const Settings = ({ onLogout }) => {
           alert("File CSV kosong.");
           return;
         }
+        
         const transactions = rows.map((row) => {
           const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
           const cln = (s) => (s ? s.replace(/^"|"$/g, "").trim() : "");
+          
+          let dateStr = cln(cols[0]);
+          try {
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const mm = parts[0].padStart(2, '0'); 
+                    const dd = parts[1].padStart(2, '0');
+                    const yyyy = parts[2];
+                    dateStr = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+          } catch (err) {
+            console.error("Gagal parsing tanggal:", dateStr);
+          }
+
           return {
-            date: cln(cols[0]),
+            date: dateStr,
             title: cln(cols[1]),
             amount: Number(cln(cols[2])),
             type: cln(cols[3]),
@@ -247,13 +268,15 @@ const Settings = ({ onLogout }) => {
             account: cln(cols[5]),
           };
         });
+
         await axios.post("http://localhost:5000/api/transactions/import", {
           user_id: userId,
           transactions,
         });
-        alert("✅ Impor berhasil!");
+        alert("✅ Impor berhasil! Silakan cek transaksi di tahun terkait.");
       } catch (err) {
-        alert("Gagal mengimpor file.");
+        console.error(err);
+        alert("Gagal mengimpor file. Pastikan format CSV benar.");
       } finally {
         setIsProcessing(false);
         e.target.value = "";
@@ -262,7 +285,6 @@ const Settings = ({ onLogout }) => {
     reader.readAsText(file);
   };
 
-  // --- LOAD DATA AWAL ---
   useEffect(() => {
     if (document.documentElement.classList.contains("dark")) setIsDark(true);
     const savedColor = localStorage.getItem("customColor");
@@ -277,10 +299,8 @@ const Settings = ({ onLogout }) => {
   }, [userId]);
 
   return (
-    // PERBAIKAN: Mengubah max-w-4xl menjadi max-w-5xl dan menambah px-4 agar konsisten
     <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
       
-      {/* Hidden File Input untuk Import */}
       <input
         type="file"
         ref={fileInputRef}
@@ -301,7 +321,7 @@ const Settings = ({ onLogout }) => {
       </div>
 
       <div className="space-y-8">
-        {/* BAGIAN 1: PERSONALISASI (TAMPILAN) */}
+        {/* BAGIAN 1: PERSONALISASI */}
         <section className="bg-white dark:bg-[#1E1E1E] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm transition-colors">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl text-purple-600">
@@ -341,38 +361,50 @@ const Settings = ({ onLogout }) => {
               </div>
             </div>
             <hr className="border-gray-100 dark:border-gray-800" />
+            
+            {/* --- PEMILIHAN WARNA (DESIGN BARU + CUSTOM PICKER) --- */}
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-3">
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-4">
                 Warna Tema Utama
               </p>
-              <div className="flex flex-wrap gap-3">
+              {/* Gunakan Flex-Wrap agar tidak aneh saat layar berubah */}
+              <div className="flex flex-wrap gap-4">
                 {presets.map((color) => (
                   <button
                     key={color.hex}
                     onClick={() => applyColor(color.hex)}
-                    className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${
-                      activeColor === color.hex
-                        ? "border-gray-400 scale-110 shadow-md ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1E1E1E]"
-                        : "border-transparent hover:scale-105"
-                    }`}
+                    className={`
+                      w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300
+                      ${activeColor === color.hex 
+                        ? "ring-4 ring-offset-2 ring-gray-200 scale-110 shadow-lg dark:ring-offset-[#1E1E1E] dark:ring-gray-700" 
+                        : "hover:scale-110 hover:shadow-md ring-1 ring-gray-200 dark:ring-gray-700"}
+                    `}
                     style={{ backgroundColor: color.hex }}
+                    title={color.name}
                   >
                     {activeColor === color.hex && (
-                      <Check size={16} className="text-white drop-shadow-md" />
+                      <Check size={18} className="text-white drop-shadow-md animate-in zoom-in duration-300" strokeWidth={3} />
                     )}
                   </button>
                 ))}
-                <div className="relative group">
+
+                {/* TOMBOL CUSTOM COLOR (PELANGI) */}
+                <div className="relative group w-11 h-11">
                   <input
                     type="color"
                     value={activeColor}
                     onChange={(e) => applyColor(e.target.value)}
-                    className="w-10 h-10 rounded-full overflow-hidden cursor-pointer border-0 p-0 opacity-0 absolute z-10"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    title="Pilih warna custom"
                   />
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center border-2 border-transparent group-hover:scale-105 transition-transform cursor-pointer">
-                    <span className="text-[10px] font-bold text-gray-600">
-                      ?
-                    </span>
+                  <div className={`
+                    w-full h-full rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500
+                    flex items-center justify-center transition-all duration-300 shadow-sm
+                    ${!presets.some(p => p.hex === activeColor) 
+                        ? "ring-4 ring-offset-2 ring-gray-200 scale-110 shadow-lg dark:ring-offset-[#1E1E1E] dark:ring-gray-700" 
+                        : "group-hover:scale-110 group-hover:shadow-md"}
+                  `}>
+                    <Palette size={18} className="text-white drop-shadow-sm" />
                   </div>
                 </div>
               </div>
@@ -380,7 +412,7 @@ const Settings = ({ onLogout }) => {
           </div>
         </section>
 
-        {/* --- BAGIAN 2: MANAJEMEN KATEGORI --- */}
+        {/* --- BAGIAN 2: MANAJEMEN KATEGORI (CUSTOM DROPDOWN) --- */}
         <section className="bg-white dark:bg-[#1E1E1E] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm transition-colors">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl text-emerald-600">
@@ -401,19 +433,42 @@ const Settings = ({ onLogout }) => {
                 placeholder="Nama kategori baru..."
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
-                className="flex-1 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl outline-none text-sm border border-transparent focus:border-primary dark:text-white"
+                className="flex-1 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl outline-none text-sm font-medium border border-transparent focus:border-primary dark:text-white"
               />
-              <select
-                value={newCatType}
-                onChange={(e) => setNewCatType(e.target.value)}
-                className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl text-sm outline-none dark:text-white font-bold cursor-pointer"
-              >
-                <option value="EXPENSE">PENGELUARAN</option>
-                <option value="INCOME">PEMASUKAN</option>
-              </select>
+              
+              {/* CUSTOM DROPDOWN */}
+              <div className="relative min-w-[160px]">
+                <div 
+                  onClick={() => setIsTypeOpen(!isTypeOpen)}
+                  className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl text-sm font-bold text-gray-700 dark:text-white cursor-pointer flex justify-between items-center border border-transparent hover:border-primary/50 transition-all h-full"
+                >
+                  <span>{newCatType === 'EXPENSE' ? 'Pengeluaran' : 'Pemasukan'}</span>
+                  <ChevronDown size={18} className={`transition-transform duration-200 ${isTypeOpen ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {isTypeOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-full bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div 
+                      onClick={() => { setNewCatType('EXPENSE'); setIsTypeOpen(false); }}
+                      className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm font-medium dark:text-gray-200 flex items-center justify-between"
+                    >
+                      Pengeluaran
+                      {newCatType === 'EXPENSE' && <Check size={16} className="text-primary" />}
+                    </div>
+                    <div 
+                      onClick={() => { setNewCatType('INCOME'); setIsTypeOpen(false); }}
+                      className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm font-medium dark:text-gray-200 flex items-center justify-between border-t border-gray-50 dark:border-gray-700"
+                    >
+                      Pemasukan
+                      {newCatType === 'INCOME' && <Check size={16} className="text-primary" />}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 type="submit"
-                className="bg-primary text-white px-5 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all"
+                className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-primary/30"
               >
                 <Plus size={18} /> Tambah
               </button>
@@ -502,7 +557,6 @@ const Settings = ({ onLogout }) => {
 
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Custom Nama */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase">
                   Nama Lengkap
@@ -519,7 +573,6 @@ const Settings = ({ onLogout }) => {
                 </div>
               </div>
 
-              {/* Email (Read-Only sebagai ID) */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase">
                   Alamat Email (Akun)
@@ -538,7 +591,6 @@ const Settings = ({ onLogout }) => {
 
             <hr className="border-gray-100 dark:border-gray-800" />
 
-            {/* Bagian Set Password */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase">
@@ -592,7 +644,7 @@ const Settings = ({ onLogout }) => {
           </button>
         </section>
 
-        {/* BAGIAN 4: MANAJEMEN DATA (EKSPOR/IMPOR) */}
+        {/* BAGIAN 4: MANAJEMEN DATA */}
         <section className="bg-white dark:bg-[#1E1E1E] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm transition-colors">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl text-emerald-600">
@@ -634,7 +686,8 @@ const Settings = ({ onLogout }) => {
                     className="text-gray-400 group-hover:text-emerald-500"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl cursor-pointer transition-colors group">
+                <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl cursor-pointer transition-colors group"
+                >
                   <div
                     className="flex items-center gap-3"
                     onClick={triggerImport}

@@ -6,6 +6,9 @@ import {
   Bell,
   ArrowRight,
   ChevronDown,
+  ChevronLeft, // Pastikan ini diimport
+  ChevronRight, // Pastikan ini diimport
+  Calendar,
   Check,
   Sparkles,
   BrainCircuit,
@@ -38,7 +41,14 @@ const Dashboard = () => {
   const [chartType, setChartType] = useState("line");
   const [chartFilter, setChartFilter] = useState("7D");
   const [transactionData, setTransactionData] = useState([]);
-  const [isChartFilterOpen, setIsChartFilterOpen] = useState(false);
+  
+  // --- STATE FILTER WAKTU (BULAN & TAHUN) ---
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  
+  // State untuk Dropdown Custom
+  const [isMonthOpen, setIsMonthOpen] = useState(false);
+  const [isYearOpen, setIsYearOpen] = useState(false);
 
   const [data, setData] = useState({
     userName: localStorage.getItem("userName") || "User",
@@ -50,9 +60,6 @@ const Dashboard = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filter, setFilter] = useState("THIS_MONTH");
-
   const [forecast, setForecast] = useState(null);
   const [isPredicting, setIsPredicting] = useState(false);
 
@@ -65,6 +72,16 @@ const Dashboard = () => {
   );
 
   const userId = localStorage.getItem("user_id");
+
+  // --- DATA STATIS ---
+  const monthNames = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+
+  // Generate Tahun
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 8 }, (_, i) => currentYear - 5 + i);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -93,13 +110,19 @@ const Dashboard = () => {
   const handleColorChange = (hexColor) => {
     setCurrentColor(hexColor);
     localStorage.setItem("customColor", hexColor);
-    setIsColorPickerOpen(false);
+    // Kita tidak langsung menutup popup agar user bisa melihat perubahan warnanya
+    // setIsColorPickerOpen(false); 
   };
 
   const fetchData = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/dashboard/${userId}`
+        `http://localhost:5000/api/dashboard/${userId}`, {
+          params: {
+            month: selectedMonth,
+            year: selectedYear
+          }
+        }
       );
       setData(res.data);
       if (res.data.userName)
@@ -122,7 +145,7 @@ const Dashboard = () => {
     }
   };
 
-  // --- PREDICT LOGIC WITH ANIMATION ---
+  // --- PREDICT LOGIC ---
   const getPrediction = async () => {
     setIsPredicting(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -140,12 +163,13 @@ const Dashboard = () => {
     }
   };
 
+  // Update data saat filter berubah
   useEffect(() => {
     if (userId) {
       fetchData();
       fetchChartData();
     }
-  }, [userId, filter, chartFilter, chartType]);
+  }, [userId, selectedMonth, selectedYear, chartFilter, chartType]);
 
   const formatRp = (num) => "Rp " + Number(num).toLocaleString("id-ID");
 
@@ -157,14 +181,7 @@ const Dashboard = () => {
     return "Selamat Malam";
   };
 
-  const filterOptions = [
-    { value: "THIS_MONTH", label: "📅 Bulan Ini" },
-    { value: "LAST_30_DAYS", label: "⏳ 30 Hari Terakhir" },
-    { value: "ALL_TIME", label: "♾️ Semua Waktu" },
-  ];
-
   return (
-    // PERBAIKAN: Mengubah max-w-6xl menjadi max-w-5xl agar konsisten dengan halaman lain
     <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
       {/* --- TOP BAR --- */}
       <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -192,6 +209,7 @@ const Dashboard = () => {
               <Moon size={20} />
             )}
           </button>
+          
           <button
             onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
             className="w-10 h-10 rounded-full bg-white dark:bg-[#1E1E1E] border border-gray-200 dark:border-gray-700 flex items-center justify-center text-primary transition-all shadow-sm active:scale-90"
@@ -199,11 +217,12 @@ const Dashboard = () => {
             <Palette size={20} />
           </button>
 
+          {/* --- POPUP COLOR PICKER --- */}
           {isColorPickerOpen && (
             <div className="absolute top-14 right-0 bg-[#1A1A1A] p-5 rounded-2xl shadow-2xl z-50 w-72 border border-gray-700 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center mb-4 text-white">
                 <h3 className="font-bold text-sm">Pilih Warna Tema</h3>
-                <button onClick={() => setIsColorPickerOpen(false)}>
+                <button onClick={() => setIsColorPickerOpen(false)} className="text-gray-400 hover:text-white">
                   <X size={16} />
                 </button>
               </div>
@@ -212,18 +231,37 @@ const Dashboard = () => {
                   <button
                     key={color.id}
                     onClick={() => handleColorChange(color.hex)}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-offset-2 ring-offset-[#1A1A1A] ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-offset-2 ring-offset-[#1A1A1A] transition-transform active:scale-90 ${
                       currentColor === color.hex
-                        ? "ring-white"
-                        : "ring-transparent"
+                        ? "ring-white scale-110"
+                        : "ring-transparent hover:scale-110"
                     }`}
                     style={{ backgroundColor: color.hex }}
                   >
                     {currentColor === color.hex && (
-                      <Check size={14} className="text-white" />
+                      <Check size={14} className="text-white drop-shadow-md" />
                     )}
                   </button>
                 ))}
+
+                {/* --- TOMBOL CUSTOM COLOR (PELANGI) --- */}
+                <div className="relative group w-8 h-8">
+                  <input
+                    type="color"
+                    value={currentColor}
+                    onChange={(e) => handleColorChange(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    title="Pilih warna custom"
+                  />
+                  <div className={`
+                    w-full h-full rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-500 
+                    flex items-center justify-center ring-2 ring-offset-2 ring-offset-[#1A1A1A] transition-transform group-hover:scale-110
+                    ${!THEME_COLORS.some(c => c.hex === currentColor) ? "ring-white" : "ring-transparent"}
+                  `}>
+                    <Palette size={14} className="text-white drop-shadow-md" />
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
@@ -238,7 +276,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading && !data.userName ? (
         <div className="py-20 text-center text-gray-400">
           Loading Dashboard...
         </div>
@@ -276,7 +314,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-3 mb-2">
                 <TrendingUp size={20} className="text-emerald-500" />{" "}
                 <span className="text-sm text-gray-400 font-medium">
-                  Pemasukan
+                  Pemasukan (Bulan Ini)
                 </span>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -288,7 +326,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-3 mb-2">
                 <TrendingDown size={20} className="text-red-500" />{" "}
                 <span className="text-sm text-gray-400 font-medium">
-                  Pengeluaran
+                  Pengeluaran (Bulan Ini)
                 </span>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -297,14 +335,13 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* --- PREMIUM AI FORECAST CARD WITH ANIMATION --- */}
+          {/* --- AI FORECAST --- */}
           <div
             className="text-white rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden border border-gray-800 transition-all duration-500 group"
             style={{
               background: `linear-gradient(120deg, #111827 40%, ${currentColor}99 120%)`,
             }}
           >
-            {/* Animasi Cahaya Berjalan (Scanning Line) */}
             {isPredicting && (
               <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[2.5rem]">
                 <div className="w-full h-full bg-gradient-to-b from-transparent via-primary/20 to-transparent absolute -translate-y-full animate-[scan_2s_infinite] shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
@@ -322,7 +359,7 @@ const Dashboard = () => {
                     }`}
                     size={28}
                   />{" "}
-                  AI Forecast
+                  Forecast
                 </h3>
                 <p className="text-gray-400 text-sm mt-2">
                   Menganalisis riwayat 3 bulan Anda untuk memprediksi tren masa
@@ -440,45 +477,77 @@ const Dashboard = () => {
           {/* --- RECENT TRANSACTIONS --- */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white uppercase tracking-tight">
                   Transaksi Terakhir
                 </h3>
-                <div className="relative">
-                  <div
-                    onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className="bg-white dark:bg-[#1E1E1E] border border-gray-100 dark:border-gray-700 px-4 py-2 rounded-xl cursor-pointer flex items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-300"
-                  >
-                    {filterOptions.find((f) => f.value === filter)?.label}{" "}
-                    <ChevronDown size={14} />
+                
+                {/* --- CUSTOM DROPDOWN FILTER (BULAN & TAHUN) --- */}
+                <div className="flex items-center gap-2">
+                  
+                  {/* Dropdown Bulan */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => { setIsMonthOpen(!isMonthOpen); setIsYearOpen(false); }}
+                      className="bg-white dark:bg-[#1E1E1E] px-4 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all min-w-[110px] justify-between"
+                    >
+                      {monthNames[selectedMonth - 1]}
+                      <ChevronDown size={14} className={`transition-transform duration-200 ${isMonthOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    
+                    {isMonthOpen && (
+                      <div className="absolute top-full right-0 mt-2 w-40 bg-white dark:bg-[#2A2A2A] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-20 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
+                        {monthNames.map((m, idx) => (
+                          <div
+                            key={m}
+                            onClick={() => { setSelectedMonth(idx + 1); setIsMonthOpen(false); }}
+                            className={`px-4 py-3 text-xs font-bold cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex justify-between items-center ${
+                              selectedMonth === idx + 1 ? "text-primary bg-primary/5" : "text-gray-600 dark:text-gray-300"
+                            }`}
+                          >
+                            {m}
+                            {selectedMonth === idx + 1 && <Check size={14} />}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {isFilterOpen && (
-                    <div className="absolute top-full right-0 w-48 mt-2 bg-white dark:bg-[#2A2A2A] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
-                      {filterOptions.map((opt) => (
-                        <div
-                          key={opt.value}
-                          onClick={() => {
-                            setFilter(opt.value);
-                            setIsFilterOpen(false);
-                          }}
-                          className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-xs font-bold ${
-                            filter === opt.value
-                              ? "text-primary"
-                              : "text-gray-600 dark:text-gray-300"
-                          }`}
-                        >
-                          {opt.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+
+                  {/* Dropdown Tahun */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => { setIsYearOpen(!isYearOpen); setIsMonthOpen(false); }}
+                      className="bg-white dark:bg-[#1E1E1E] px-4 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all min-w-[80px] justify-between"
+                    >
+                      {selectedYear}
+                      <ChevronDown size={14} className={`transition-transform duration-200 ${isYearOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    
+                    {isYearOpen && (
+                      <div className="absolute top-full right-0 mt-2 w-28 bg-white dark:bg-[#2A2A2A] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-20 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
+                        {years.map((y) => (
+                          <div
+                            key={y}
+                            onClick={() => { setSelectedYear(y); setIsYearOpen(false); }}
+                            className={`px-4 py-3 text-xs font-bold cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex justify-between items-center ${
+                              selectedYear === y ? "text-primary bg-primary/5" : "text-gray-600 dark:text-gray-300"
+                            }`}
+                          >
+                            {y}
+                            {selectedYear === y && <Check size={14} />}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               </div>
 
               <div className="bg-white dark:bg-[#1E1E1E] rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                 {data.recentTransactions.length === 0 ? (
-                  <p className="text-gray-400 text-center py-10">
-                    Belum ada transaksi.
+                  <p className="text-gray-400 text-center py-10 text-sm">
+                    Belum ada transaksi di {monthNames[selectedMonth - 1]} {selectedYear}.
                   </p>
                 ) : (
                   <div className="space-y-4">

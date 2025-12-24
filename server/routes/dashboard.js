@@ -4,67 +4,77 @@ const pool = require('../config/supa');
 const axios = require('axios');
 
 // ==================================================================
-// GET: Dashboard Summary (Saldo, Expense, Bills, & USER NAME)
+// GET: Dashboard Summary
 // ==================================================================
 router.get('/:user_id', async (req, res) => {
   try {
     const { user_id } = req.params;
+    // Ambil parameter bulan dan tahun dari frontend (default ke bulan/tahun sekarang jika kosong)
+    const currentDate = new Date();
+    const { 
+      month = currentDate.getMonth() + 1, 
+      year = currentDate.getFullYear() 
+    } = req.query;
 
-    // 1. AMBIL NAMA USER (PENTING AGAR TIDAK LOADING TERUS)
+    // 1. AMBIL NAMA USER
     const userQuery = `SELECT full_name FROM users WHERE user_id = $1`;
 
-    // 2. Hitung Total Saldo (Sum semua akun)
+    // 2. Hitung Total Saldo (Semua Waktu)
     const saldoQuery = `SELECT SUM(balance) as total_saldo FROM accounts WHERE user_id = $1`;
 
-    // 3. Hitung Pemasukan Bulan Ini
+    // 3. Hitung Pemasukan (KHUSUS BULAN INI - STATIS)
+    // Menggunakan date_trunc('month', CURRENT_DATE) agar selalu bulan berjalan
     const incomeQuery = `
       SELECT SUM(amount) as total_income 
       FROM transactions 
       WHERE user_id = $1 AND type = 'INCOME' 
       AND transaction_date >= date_trunc('month', CURRENT_DATE)`;
 
-    // 4. Hitung Pengeluaran Bulan Ini
+    // 4. Hitung Pengeluaran (KHUSUS BULAN INI - STATIS)
     const expenseQuery = `
       SELECT SUM(amount) as total_expense 
       FROM transactions 
       WHERE user_id = $1 AND type = 'EXPENSE' 
       AND transaction_date >= date_trunc('month', CURRENT_DATE)`;
 
-    // 5. Ambil 5 Transaksi Terakhir
+    // 5. Ambil Transaksi (DINAMIS - Berdasarkan Filter Dropdown)
+    // Menggunakan EXTRACT untuk mencocokkan bulan dan tahun yang dipilih user
     const recentTxQuery = `
       SELECT t.*, c.name as category_name, a.account_name 
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.category_id
       LEFT JOIN accounts a ON t.account_id = a.account_id
-      WHERE t.user_id = $1
+      WHERE t.user_id = $1 
+      AND EXTRACT(MONTH FROM t.transaction_date) = $2
+      AND EXTRACT(YEAR FROM t.transaction_date) = $3
       ORDER BY t.transaction_date DESC, t.created_at DESC
-      LIMIT 5
+      LIMIT 10
     `;
 
-    // 6. Ambil Tagihan Belum Dibayar Terdekat
+    // 6. Ambil Tagihan (Statis Pending)
     const billsQuery = `
       SELECT * FROM scheduled_bills 
       WHERE user_id = $1 AND status = 'PENDING' 
       ORDER BY due_date ASC LIMIT 3
     `;
 
-    // Jalankan Paralel
+    // Jalankan Query
     const [userRes, saldoRes, incomeRes, expenseRes, recentRes, billsRes] = await Promise.all([
       pool.query(userQuery, [user_id]),
       pool.query(saldoQuery, [user_id]),
       pool.query(incomeQuery, [user_id]),
       pool.query(expenseQuery, [user_id]),
-      pool.query(recentTxQuery, [user_id]),
+      pool.query(recentTxQuery, [user_id, month, year]), // Masukkan parameter filter ke sini
       pool.query(billsQuery, [user_id])
     ]);
 
     // Kirim Respon
     res.json({
-      userName: userRes.rows[0]?.full_name || 'User', // Nama User Realtime
+      userName: userRes.rows[0]?.full_name || 'User',
       totalBalance: saldoRes.rows[0].total_saldo || 0,
-      monthlyIncome: incomeRes.rows[0].total_income || 0,
-      monthlyExpense: expenseRes.rows[0].total_expense || 0,
-      recentTransactions: recentRes.rows,
+      monthlyIncome: incomeRes.rows[0].total_income || 0, // Ini data bulan ini (statis)
+      monthlyExpense: expenseRes.rows[0].total_expense || 0, // Ini data bulan ini (statis)
+      recentTransactions: recentRes.rows, // Ini data terfilter (dinamis)
       upcomingBills: billsRes.rows
     });
 
@@ -74,7 +84,7 @@ router.get('/:user_id', async (req, res) => {
   }
 });
 
-// 1. Endpoint untuk Line Chart (Tren Harian)
+// Endpoint Chart (Tetap sama)
 router.get('/chart-data/:user_id', async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -91,7 +101,7 @@ router.get('/chart-data/:user_id', async (req, res) => {
   } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// 2. Endpoint untuk Pie Chart (Distribusi Kategori)
+// Endpoint Pie Chart (Tetap sama)
 router.get('/pie-data/:user_id', async (req, res) => {
   try {
     const { user_id } = req.params;

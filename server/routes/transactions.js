@@ -3,34 +3,57 @@ const router = express.Router();
 const pool = require('../config/supa');
 
 // ===================================================================================
-// 1. GET: AMBIL TRANSAKSI DENGAN PAGINATION (Untuk Halaman Transaksi)
+// 1. GET: AMBIL TRANSAKSI DENGAN FILTER BULAN & TAHUN
 // ===================================================================================
 router.get('/:user_id', async (req, res) => {
   try {
     const { user_id } = req.params;
-    const { page = 1, limit = 5 } = req.query;
+    const { page = 1, limit = 10, month, year } = req.query; 
     const offset = (page - 1) * limit;
 
+    // 1. Mulai rakit query dasar
+    let queryParams = [user_id];
+    let whereClause = "WHERE t.user_id = $1";
+    let paramCounter = 2; // Mulai dari $2 karena $1 adalah user_id
+
+    // 2. Tambahkan Filter Waktu (PENTING AGAR FILTER FRONTEND BERFUNGSI)
+    if (month && year) {
+      whereClause += ` AND EXTRACT(MONTH FROM t.transaction_date) = $${paramCounter} AND EXTRACT(YEAR FROM t.transaction_date) = $${paramCounter + 1}`;
+      queryParams.push(month, year);
+      paramCounter += 2;
+    }
+
+    // 3. Query Data Utama
     const query = `
       SELECT t.*, c.name as category_name, a.account_name, g.name as goal_name
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.category_id
       LEFT JOIN accounts a ON t.account_id = a.account_id
       LEFT JOIN goals g ON t.goal_id = g.goal_id
-      WHERE t.user_id = $1
+      ${whereClause}
       ORDER BY t.transaction_date DESC, t.created_at DESC
-      LIMIT $2 OFFSET $3`;
+      LIMIT $${paramCounter} OFFSET $${paramCounter + 1}`;
 
-    const result = await pool.query(query, [user_id, limit, offset]);
+    // 4. Tambahkan limit & offset ke parameter array untuk query data
+    const queryParamsForData = [...queryParams, limit, offset];
 
-    // Hitung total items untuk pagination
-    const total = await pool.query("SELECT COUNT(*) FROM transactions WHERE user_id = $1", [user_id]);
+    const result = await pool.query(query, queryParamsForData);
+
+    // 5. Hitung Total Data (Agar Pagination Akurat sesuai Filter)
+    const countQuery = `SELECT COUNT(*) FROM transactions t ${whereClause}`;
+    // Gunakan params asli (tanpa limit/offset) untuk hitung total
+    const total = await pool.query(countQuery, queryParams); 
 
     res.json({
       data: result.rows,
-      pagination: { totalItems: parseInt(total.rows[0].count), totalPages: Math.ceil(total.rows[0].count / limit), currentPage: parseInt(page) }
+      pagination: { 
+        totalItems: parseInt(total.rows[0].count), 
+        totalPages: Math.ceil(total.rows[0].count / limit), 
+        currentPage: parseInt(page) 
+      }
     });
   } catch (err) {
+    console.error(err.message);
     res.status(500).send('Server Error');
   }
 });
@@ -66,19 +89,19 @@ router.post('/', async (req, res) => {
   try {
     const {
       user_id, account_id, category_id, title, amount,
-      type, transaction_date, budget_id, goal_id // Tambahkan goal_id
+      type, transaction_date, budget_id, goal_id 
     } = req.body;
 
     await client.query('BEGIN');
 
-    // 1. Simpan Transaksi dengan budget_id dan goal_id
+    // 1. Simpan Transaksi
     const newTx = await client.query(
       `INSERT INTO transactions (user_id, account_id, category_id, title, amount, type, transaction_date, budget_id, goal_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [user_id, account_id, category_id, title, amount, type, transaction_date, budget_id, goal_id]
     );
 
-    // 2. Update Saldo Akun (Tetap sama)
+    // 2. Update Saldo Akun
     const updateAccQuery = type === 'INCOME'
       ? 'UPDATE accounts SET balance = balance + $1 WHERE account_id = $2'
       : 'UPDATE accounts SET balance = balance - $1 WHERE account_id = $2';
@@ -96,42 +119,61 @@ router.post('/', async (req, res) => {
 });
 
 // ===================================================================================
-// 4. POST: IMPOR CSV (BULK INSERT)
+// 4. POST: IMPOR CSV (BULK INSERT - DENGAN AUTO CREATE)
 // ===================================================================================
 router.post('/import', async (req, res) => {
   const client = await pool.connect();
   try {
-    const { user_id, transactions } = req.body; // Array data dari frontend
+    const { user_id, transactions } = req.body; 
+
+    if (!transactions || transactions.length === 0) {
+      return res.status(400).json({ message: "Data CSV kosong" });
+    }
 
     await client.query('BEGIN');
 
     let successCount = 0;
 
     for (const item of transactions) {
-      // A. Cari ID Kategori berdasarkan Nama (Case Insensitive)
+      // A. URUS KATEGORI (Cari dulu, kalau tidak ada -> BUAT BARU)
+      let category_id = null;
+      const catName = (item.category || "Umum").trim();
+      
       let catRes = await client.query(
-        "SELECT category_id FROM categories WHERE user_id = $1 AND LOWER(name) = LOWER($2)",
-        [user_id, item.category]
+        "SELECT category_id FROM categories WHERE user_id = $1 AND LOWER(name) = LOWER($2) AND type = $3",
+        [user_id, catName, item.type]
       );
-      let category_id = catRes.rows.length > 0 ? catRes.rows[0].category_id : null;
 
-      // B. Cari ID Akun berdasarkan Nama
+      if (catRes.rows.length > 0) {
+        category_id = catRes.rows[0].category_id;
+      } else {
+        const newCat = await client.query(
+          "INSERT INTO categories (user_id, name, type, icon) VALUES ($1, $2, $3, 'tag') RETURNING category_id",
+          [user_id, catName, item.type]
+        );
+        category_id = newCat.rows[0].category_id;
+      }
+
+      // B. URUS DOMPET (Cari dulu, kalau tidak ada -> BUAT BARU)
+      let account_id = null;
+      const accName = (item.account || "Dompet Tunai").trim();
+
       let accRes = await client.query(
         "SELECT account_id FROM accounts WHERE user_id = $1 AND LOWER(account_name) = LOWER($2)",
-        [user_id, item.account]
+        [user_id, accName]
       );
 
-      let account_id;
       if (accRes.rows.length > 0) {
         account_id = accRes.rows[0].account_id;
       } else {
-        // Fallback: Jika nama dompet di CSV tidak ada, masukkan ke dompet pertama user
-        const fallbackAcc = await client.query("SELECT account_id FROM accounts WHERE user_id = $1 LIMIT 1", [user_id]);
-        if (fallbackAcc.rows.length > 0) account_id = fallbackAcc.rows[0].account_id;
-        else continue; // Skip jika user tidak punya akun sama sekali
+        const newAcc = await client.query(
+          "INSERT INTO accounts (user_id, account_name, balance, account_type) VALUES ($1, $2, 0, 'CASH') RETURNING account_id",
+          [user_id, accName]
+        );
+        account_id = newAcc.rows[0].account_id;
       }
 
-      // C. Insert Transaksi
+      // C. INSERT TRANSAKSI
       await client.query(
         `INSERT INTO transactions (user_id, title, amount, type, transaction_date, category_id, account_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -149,11 +191,11 @@ router.post('/import', async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ message: `Berhasil mengimpor ${successCount} transaksi.` });
+    res.json({ message: `Sukses! ${successCount} transaksi berhasil diimpor.` });
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(err.message);
+    console.error("Import Error:", err.message);
     res.status(500).send('Gagal Import: ' + err.message);
   } finally {
     client.release();
@@ -168,19 +210,13 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      account_id,
-      category_id,
-      title,
-      amount,
-      type,
-      transaction_date,
-      budget_id, // Tangkap data budget_id
-      goal_id    // Tangkap data goal_id
+      account_id, category_id, title, amount, type,
+      transaction_date, budget_id, goal_id 
     } = req.body;
 
     await client.query('BEGIN');
 
-    // 1. AMBIL DATA LAMA (Untuk Proses Rollback Saldo)
+    // 1. AMBIL DATA LAMA
     const oldTxRes = await client.query("SELECT * FROM transactions WHERE transaction_id = $1", [id]);
     const oldTx = oldTxRes.rows[0];
 
@@ -189,35 +225,24 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: "Transaksi tidak ditemukan" });
     }
 
-    // 2. KEMBALIKAN SALDO AKUN LAMA (Rollback)
-    // Jika transaksi lama adalah INCOME -> Kita kurangi saldo (karena akan diganti)
-    // Jika transaksi lama adalah EXPENSE -> Kita tambah kembali saldonya (Refund)
+    // 2. KEMBALIKAN SALDO LAMA (Rollback)
     const reverseQuery = oldTx.type === 'INCOME'
       ? 'UPDATE accounts SET balance = balance - $1 WHERE account_id = $2'
       : 'UPDATE accounts SET balance = balance + $1 WHERE account_id = $2';
     await client.query(reverseQuery, [oldTx.amount, oldTx.account_id]);
 
-    // 3. UPDATE DATA TRANSAKSI
-    // Pastikan budget_id dan goal_id masuk ke query UPDATE
+    // 3. UPDATE DATA
     const updateTx = await client.query(
       `UPDATE transactions 
        SET account_id=$1, category_id=$2, title=$3, amount=$4, type=$5, transaction_date=$6, budget_id=$7, goal_id=$8
        WHERE transaction_id=$9 RETURNING *`,
       [
-        account_id,
-        category_id,
-        title,
-        amount,
-        type,
-        transaction_date,
-        budget_id || null, // Pastikan NULL jika tidak dipilih
-        goal_id || null,   // Pastikan NULL jika tidak dipilih
-        id
+        account_id, category_id, title, amount, type, transaction_date,
+        budget_id || null, goal_id || null, id
       ]
     );
 
-    // 4. TERAPKAN SALDO AKUN BARU
-    // Terapkan penyesuaian saldo berdasarkan data nominal dan tipe yang baru
+    // 4. TERAPKAN SALDO BARU
     const applyQuery = type === 'INCOME'
       ? 'UPDATE accounts SET balance = balance + $1 WHERE account_id = $2'
       : 'UPDATE accounts SET balance = balance - $1 WHERE account_id = $2';
@@ -228,8 +253,8 @@ router.put('/:id', async (req, res) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error("❌ UPDATE TRANSACTION ERROR:", err.message);
-    res.status(500).json({ message: "Gagal memperbarui transaksi", error: err.message });
+    console.error("❌ UPDATE ERROR:", err.message);
+    res.status(500).json({ message: "Gagal update", error: err.message });
   } finally {
     client.release();
   }
@@ -245,7 +270,6 @@ router.delete('/:id', async (req, res) => {
 
     await client.query('BEGIN');
 
-    // 1. Ambil data dulu sebelum dihapus
     const oldTxRes = await client.query("SELECT * FROM transactions WHERE transaction_id = $1", [id]);
     const oldTx = oldTxRes.rows[0];
 
@@ -254,10 +278,9 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: "Transaksi tidak ditemukan" });
     }
 
-    // 2. Hapus Transaksi
     await client.query('DELETE FROM transactions WHERE transaction_id = $1', [id]);
 
-    // 3. KOREKSI SALDO (Reverse Effect)
+    // Kembalikan Saldo
     const reverseQuery = oldTx.type === 'INCOME'
       ? 'UPDATE accounts SET balance = balance - $1 WHERE account_id = $2'
       : 'UPDATE accounts SET balance = balance + $1 WHERE account_id = $2';
@@ -265,7 +288,7 @@ router.delete('/:id', async (req, res) => {
     await client.query(reverseQuery, [oldTx.amount, oldTx.account_id]);
 
     await client.query('COMMIT');
-    res.json({ message: 'Transaksi berhasil dihapus dan saldo dikembalikan' });
+    res.json({ message: 'Transaksi berhasil dihapus' });
 
   } catch (err) {
     await client.query('ROLLBACK');
