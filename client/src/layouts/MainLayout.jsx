@@ -85,9 +85,12 @@ const MainLayout = () => {
           </div>
         </div>
 
-        {/* MENU NAVIGASI */}
-        {/* FIX 2: overflow-x-hidden di sini agar teks menu tidak membuat scroll saat sidebar mengecil */}
-        <nav className="flex-1 px-4 space-y-1.5 flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar">
+                {/* MENU NAVIGASI */}
+        {/* PERBAIKAN: Gunakan logic ternary pada class overflow */}
+        <nav className={`
+            flex-1 px-4 space-y-1.5 flex flex-col 
+            ${expanded ? 'overflow-y-auto custom-scrollbar' : 'overflow-visible'}
+        `}>
           {menus.map((item) => (
             <NavLink
               key={item.path}
@@ -103,14 +106,17 @@ const MainLayout = () => {
             >
               <span className="relative z-10 flex-shrink-0">{item.icon}</span>
               
+              {/* Teks Label (Saat Expanded) */}
               <span className={`text-sm font-bold whitespace-nowrap transition-all duration-300 origin-left ${expanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 hidden'}`}>
                 {item.name}
               </span>
 
-              {/* Tooltip (Hanya saat menu kecil) */}
+              {/* Tooltip Hover (Saat Collapsed) */}
               {!expanded && (
-                <div className="absolute left-14 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-xl border border-gray-700">
+                <div className="absolute left-14 bg-gray-900 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[999] shadow-xl border border-gray-700">
                   {item.name}
+                  {/* Panah kecil tooltip (Opsional) */}
+                  <div className="absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-gray-900 rotate-45 border-l border-b border-gray-700"></div>
                 </div>
               )}
             </NavLink>

@@ -4,7 +4,6 @@ import {
   Mail,
   Moon,
   Sun,
-  Monitor,
   Palette,
   Save,
   Trash2,
@@ -13,13 +12,10 @@ import {
   Tag,
   Plus,
   Database,
-  FileSpreadsheet,
   Upload,
   Download,
   FileText,
-  Cloud,
   ChevronRight,
-  HardDrive,
   Loader2,
   Lock,
   ShieldCheck,
@@ -133,7 +129,7 @@ const Settings = ({ onLogout }) => {
     localStorage.setItem("customColor", hex);
   };
 
-  // --- LOGIKA UPDATE PROFIL (DIMODIFIKASI) ---
+  // --- LOGIKA UPDATE PROFIL ---
   const handleSaveProfile = async () => {
     if (password && password !== confirmPassword) {
       alert("Password dan Konfirmasi Password tidak cocok!");
@@ -142,10 +138,8 @@ const Settings = ({ onLogout }) => {
 
     setIsProcessing(true);
     try {
-      // Simpan nama ke localStorage
       localStorage.setItem("userName", name);
 
-      // Kirim ke backend jika perlu (Contoh endpoint)
       await axios.put(`http://localhost:5000/api/users/${userId}`, {
         full_name: name,
         password: password || undefined,
@@ -283,7 +277,9 @@ const Settings = ({ onLogout }) => {
   }, [userId]);
 
   return (
-    <div className="pb-24 max-w-4xl mx-auto animate-in fade-in duration-500">
+    // PERBAIKAN: Mengubah max-w-4xl menjadi max-w-5xl dan menambah px-4 agar konsisten
+    <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
+      
       {/* Hidden File Input untuk Import */}
       <input
         type="file"
@@ -293,13 +289,15 @@ const Settings = ({ onLogout }) => {
         style={{ display: "none" }}
       />
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Pengaturan
-        </h2>
-        <p className="text-gray-400 text-sm">
-          Kelola preferensi, kategori, dan data akun Anda
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Pengaturan
+          </h2>
+          <p className="text-gray-400 text-sm mt-1">
+            Kelola preferensi, kategori, dan data akun Anda.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-8">
@@ -408,7 +406,7 @@ const Settings = ({ onLogout }) => {
               <select
                 value={newCatType}
                 onChange={(e) => setNewCatType(e.target.value)}
-                className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl text-sm outline-none dark:text-white font-bold"
+                className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl text-sm outline-none dark:text-white font-bold cursor-pointer"
               >
                 <option value="EXPENSE">PENGELUARAN</option>
                 <option value="INCOME">PEMASUKAN</option>
@@ -484,7 +482,7 @@ const Settings = ({ onLogout }) => {
           </div>
         </section>
 
-        {/* BAGIAN 3: PROFIL PENGGUNA (MODIFIKASI: CUSTOM NAMA & SET PASSWORD) */}
+        {/* BAGIAN 3: PROFIL PENGGUNA */}
         <section className="bg-white dark:bg-[#1E1E1E] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm relative transition-colors">
           <button
             onClick={handleSignOut}

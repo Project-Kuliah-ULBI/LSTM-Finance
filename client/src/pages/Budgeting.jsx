@@ -42,7 +42,7 @@ const Budgeting = () => {
   const usagePercent = limitTarget > 0 ? Math.min((data.expense / limitTarget) * 100, 100).toFixed(1) : 0;
 
   return (
-    <div className="pb-24 max-w-5xl mx-auto animate-in fade-in duration-500">
+    <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
       
       {/* Header */}
       <div className="mb-8">

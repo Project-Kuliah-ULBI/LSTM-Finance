@@ -118,7 +118,7 @@ const Scheduled = () => {
   };
 
   return (
-    <div className="pb-24 max-w-5xl mx-auto animate-in fade-in duration-500">
+    <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
       
       {/* Header */}
       <div className="flex justify-between items-center mb-8">

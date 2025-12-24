@@ -225,7 +225,7 @@ const Transactions = () => {
   const currentCategories = categories.filter((c) => c.type === formData.type);
 
   return (
-    <div className="pb-24 max-w-5xl mx-auto animate-in fade-in duration-500">
+    <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
@@ -522,25 +522,30 @@ const Transactions = () => {
                             {isAddingCategory ? "Batal" : "Tambah Baru"}
                           </span>
                         </div>
+                        
+                        {/* PERBAIKAN DI SINI: Layout Input Tambah Kategori */}
                         {isAddingCategory && (
-                          <div className="p-3 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex gap-2">
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex items-center gap-2">
                             <input
                               type="text"
                               autoFocus
                               placeholder="Nama..."
                               value={newCatName}
                               onChange={(e) => setNewCatName(e.target.value)}
-                              className="flex-1 bg-white dark:bg-gray-700 px-3 py-2 rounded-lg text-sm dark:text-white outline-none"
+                              // Perbaikan lebar input agar tidak memakan tempat tombol
+                              className="w-full bg-white dark:bg-gray-700 px-3 py-2 rounded-lg text-sm dark:text-white outline-none border border-gray-200 dark:border-gray-600 focus:border-primary"
                             />
                             <button
                               type="button"
                               onClick={handleAddCustomCategory}
-                              className="bg-primary text-white p-2 rounded-lg"
+                              // Perbaikan ukuran tombol agar tidak gepeng
+                              className="bg-primary text-white p-2 rounded-lg hover:bg-primary/90 shrink-0 min-w-[36px] flex items-center justify-center"
                             >
                               <Check size={18} />
                             </button>
                           </div>
                         )}
+
                         {currentCategories.map((c) => (
                           <div
                             key={c.category_id}
@@ -722,7 +727,9 @@ const Transactions = () => {
                                 </span>
                                 <span className="text-[10px] text-gray-400">
                                   Sisa:{" "}
-                                  {formatRp(b.amount_limit - b.current_spent)}
+                                  {formatRp(
+                                    b.amount_limit - b.current_spent
+                                  )}
                                 </span>
                               </div>
                               {formData.budget_id === b.budget_id && (
@@ -747,7 +754,9 @@ const Transactions = () => {
                         className="w-full bg-gray-50 dark:bg-gray-800 h-[58px] px-4 rounded-xl cursor-pointer flex justify-between items-center border border-transparent hover:border-primary/30 transition-all"
                       >
                         <span className="font-medium dark:text-white truncate text-sm">
-                          {userGoals.find((g) => g.goal_id === formData.goal_id)
+                          {userGoals.find(
+                            (g) => g.goal_id === formData.goal_id
+                          )
                             ? `Target: ${
                                 userGoals.find(
                                   (g) => g.goal_id === formData.goal_id

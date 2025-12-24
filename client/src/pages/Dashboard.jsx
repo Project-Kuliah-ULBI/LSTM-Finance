@@ -125,7 +125,6 @@ const Dashboard = () => {
   // --- PREDICT LOGIC WITH ANIMATION ---
   const getPrediction = async () => {
     setIsPredicting(true);
-    // Kita beri sedikit delay buatan agar user bisa melihat animasi scanning yang keren
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     try {
@@ -165,7 +164,8 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="pb-24 max-w-6xl mx-auto animate-in fade-in duration-500 px-4">
+    // PERBAIKAN: Mengubah max-w-6xl menjadi max-w-5xl agar konsisten dengan halaman lain
+    <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
       {/* --- TOP BAR --- */}
       <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Check, Pencil, Trash2, AlertCircle } from "lucide-react";
+import { Plus, X, Pencil, Trash2, AlertCircle } from "lucide-react";
 import axios from "axios";
 
 const Budgets = () => {
@@ -19,21 +19,12 @@ const Budgets = () => {
 
   const formatRp = (num) => "Rp " + Number(num).toLocaleString("id-ID");
 
-  // Fungsi Map Kategori ke Emoji (Cadangan jika ikon di DB tidak ada)
   const getEmoji = (catName) => {
     const map = {
-      Makan: "🍔",
-      Minum: "☕",
-      Transport: "🚗",
-      Belanja: "🛍️",
-      Hiburan: "🎮",
-      Kesehatan: "🏥",
-      Tagihan: "🧾",
-      Pendidikan: "📚",
-      Umum: "💰",
-      Tabungan: "🏦",
+      Makan: "🍔", Minum: "☕", Transport: "🚗", Belanja: "🛍️",
+      Hiburan: "🎮", Kesehatan: "🏥", Tagihan: "🧾", Pendidikan: "📚",
+      Umum: "💰", Tabungan: "🏦",
     };
-    // Cari yang paling mendekati atau default 💰
     const match = Object.keys(map).find((key) =>
       catName?.toLowerCase().includes(key.toLowerCase())
     );
@@ -65,7 +56,7 @@ const Budgets = () => {
       setEditingId(budget.budget_id);
       setFormData({
         name: budget.budget_name || budget.name || budget.category_name || "",
-        category_id: budget.category_id, // Pastikan ID ini tersimpan
+        category_id: budget.category_id,
         amount_limit: budget.amount_limit,
       });
     } else {
@@ -77,14 +68,8 @@ const Budgets = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-
-    // PERBAIKAN VALIDASI: Cek secara eksplisit agar angka 0 atau ID valid tidak dianggap 'empty'
-    if (
-      formData.name.trim() === "" ||
-      !formData.category_id ||
-      formData.amount_limit === ""
-    ) {
-      alert("Mohon lengkapi data: Nama, Kategori (Ikon), dan Nominal!");
+    if (formData.name.trim() === "" || !formData.category_id || formData.amount_limit === "") {
+      alert("Mohon lengkapi data!");
       return;
     }
 
@@ -98,19 +83,14 @@ const Budgets = () => {
 
     try {
       if (editingId) {
-        await axios.put(
-          `http://localhost:5000/api/budgets/${editingId}`,
-          payload
-        );
+        await axios.put(`http://localhost:5000/api/budgets/${editingId}`, payload);
       } else {
         await axios.post("http://localhost:5000/api/budgets", payload);
       }
       setIsModalOpen(false);
       fetchData();
     } catch (error) {
-      alert(
-        "Gagal simpan: " + (error.response?.data?.message || "Server Error")
-      );
+      alert("Gagal simpan.");
     }
   };
 
@@ -126,39 +106,36 @@ const Budgets = () => {
   };
 
   return (
-    <div className="pb-24 max-w-6xl mx-auto px-4 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+    // PERBAIKAN: Layout Container Konsisten (max-w-5xl)
+    <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-6 md:px-10">
+      
+      {/* HEADER: Margin dan Font Konsisten */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Anggaran
           </h2>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-400 text-sm mt-1">
             Pantau batas pengeluaran Anda dengan mudah.
           </p>
         </div>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all"
+          className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/30 active:scale-95 transition-all"
         >
           <Plus size={20} /> Tambah Baru
         </button>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className="h-48 bg-gray-100 dark:bg-white/5 animate-pulse rounded-[2rem]"
-            ></div>
-          ))}
-        </div>
+        <div className="text-center py-20 text-gray-400">Memuat anggaran...</div>
       ) : budgets.length === 0 ? (
-        <div className="text-center py-24 bg-white dark:bg-[#1E1E1E] rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm">
+        <div className="text-center py-20 bg-white dark:bg-[#1E1E1E] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <AlertCircle size={40} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-400 font-bold">Belum ada anggaran.</p>
+          <p className="text-gray-400 font-medium">Belum ada anggaran.</p>
         </div>
       ) : (
+        // CARD GRID: Gap 6 (Konsisten dengan Wallets)
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {budgets.map((budget) => {
             const spent = Number(budget.current_spent || 0);
@@ -168,21 +145,19 @@ const Budgets = () => {
             return (
               <div
                 key={budget.budget_id}
-                className="bg-white dark:bg-[#1E1E1E] rounded-[2rem] p-6 shadow-xl border border-gray-50 dark:border-gray-800 group relative transition-all hover:shadow-2xl"
+                // PERBAIKAN CARD: rounded-3xl dan padding standar
+                className="bg-white dark:bg-[#1E1E1E] rounded-3xl p-6 shadow-lg border border-gray-50 dark:border-gray-800 group relative transition-all hover:scale-[1.02]"
               >
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-4">
-                    {/* ICON MENGGUNAKAN EMOTICON */}
-                    <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
+                    <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center text-2xl shadow-sm">
                       {getEmoji(budget.category_name)}
                     </div>
                     <div>
-                      <h4 className="font-black text-gray-900 dark:text-white text-lg leading-tight">
-                        {budget.budget_name ||
-                          budget.name ||
-                          budget.category_name}
+                      <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">
+                        {budget.budget_name || budget.name || budget.category_name}
                       </h4>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      <span className="text-xs font-medium text-gray-400">
                         {budget.category_name}
                       </span>
                     </div>
@@ -203,24 +178,18 @@ const Budgets = () => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex justify-between items-end">
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">
+                      <span className="text-xs font-medium text-gray-400">
                         Terpakai
                       </span>
-                      <span
-                        className={`text-xl font-black ${
-                          spent > limit
-                            ? "text-red-500"
-                            : "text-gray-900 dark:text-white"
-                        }`}
-                      >
+                      <span className={`text-lg font-bold ${spent > limit ? "text-red-500" : "text-gray-900 dark:text-white"}`}>
                         {formatRp(spent)}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">
+                      <span className="text-xs font-medium text-gray-400">
                         Batas
                       </span>
                       <span className="block text-sm font-bold text-gray-500">
@@ -231,24 +200,16 @@ const Budgets = () => {
 
                   <div className="relative w-full h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                     <div
-                      className={`h-full transition-all duration-1000 ${
-                        spent > limit ? "bg-red-500" : "bg-primary"
-                      }`}
+                      className={`h-full transition-all duration-1000 ${spent > limit ? "bg-red-500" : "bg-primary"}`}
                       style={{ width: `${percent}%` }}
                     ></div>
                   </div>
 
-                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
-                    <span
-                      className={
-                        spent > limit ? "text-red-500" : "text-emerald-500"
-                      }
-                    >
-                      {spent > limit
-                        ? "Melebihi Batas"
-                        : `${percent.toFixed(0)}% Digunakan`}
+                  <div className="flex justify-between items-center text-xs font-bold mt-1">
+                    <span className={spent > limit ? "text-red-500" : "text-emerald-500"}>
+                      {spent > limit ? "Melebihi Batas" : `${percent.toFixed(0)}%`}
                     </span>
-                    <span className="text-gray-400">
+                    <span className="text-gray-400 font-medium">
                       Sisa: {formatRp(Math.max(limit - spent, 0))}
                     </span>
                   </div>
@@ -262,57 +223,41 @@ const Budgets = () => {
       {/* MODAL FORM */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setIsModalOpen(false)}
-          ></div>
-          <div className="bg-white dark:bg-[#1E1E1E] w-full max-w-md rounded-[2.5rem] relative z-10 p-8 shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                {editingId ? "Edit Anggaran" : "Baru"}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+          <div className="bg-white dark:bg-[#1E1E1E] w-full max-w-md rounded-3xl relative z-10 p-6 shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                {editingId ? "Edit Anggaran" : "Anggaran Baru"}
               </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 bg-gray-50 dark:bg-gray-800 rounded-full text-gray-400"
-              >
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-6">
+            <form onSubmit={handleSave} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-gray-400 uppercase ml-1">
-                  Nama Anggaran
-                </label>
+                <label className="text-xs font-bold text-gray-500 uppercase">Nama Anggaran</label>
                 <input
                   type="text"
                   placeholder="Misal: Jajan Kopi"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl outline-none dark:text-white focus:ring-4 focus:ring-primary/10 font-bold text-lg"
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-xl outline-none dark:text-white focus:ring-2 focus:ring-primary/50 font-medium"
                   required
                 />
               </div>
 
               {!editingId && (
                 <div className="space-y-2">
-                  <label className="text-[11px] font-black text-gray-400 uppercase ml-1">
-                    Pilih Ikon (Kategori)
-                  </label>
+                  <label className="text-xs font-bold text-gray-500 uppercase">Pilih Kategori</label>
                   <select
                     value={formData.category_id}
-                    onChange={(e) =>
-                      setFormData({ ...formData, category_id: e.target.value })
-                    }
-                    className="w-full bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl outline-none dark:text-white font-bold appearance-none cursor-pointer"
+                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                    className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-xl outline-none dark:text-white font-medium appearance-none cursor-pointer"
                     required
                   >
                     <option value="">Pilih...</option>
-                    {categories
-                      .filter((c) => c.type === "EXPENSE")
-                      .map((c) => (
+                    {categories.filter((c) => c.type === "EXPENSE").map((c) => (
                         <option key={c.category_id} value={c.category_id}>
                           {getEmoji(c.name)} {c.name}
                         </option>
@@ -322,26 +267,19 @@ const Budgets = () => {
               )}
 
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-gray-400 uppercase ml-1">
-                  Nominal (Rp)
-                </label>
+                <label className="text-xs font-bold text-gray-500 uppercase">Nominal (Rp)</label>
                 <input
                   type="number"
                   placeholder="0"
                   value={formData.amount_limit}
-                  onChange={(e) =>
-                    setFormData({ ...formData, amount_limit: e.target.value })
-                  }
-                  className="w-full bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl outline-none dark:text-white font-black text-2xl"
+                  onChange={(e) => setFormData({ ...formData, amount_limit: e.target.value })}
+                  className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-xl outline-none dark:text-white font-bold text-lg"
                   required
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-white font-black py-5 rounded-2xl shadow-xl shadow-primary/30 transition-all text-lg active:scale-[0.98]"
-              >
-                {editingId ? "Simpan Perubahan" : "Buat Sekarang"}
+              <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 transition-all active:scale-[0.98]">
+                {editingId ? "Simpan Perubahan" : "Buat Anggaran"}
               </button>
             </form>
           </div>
