@@ -1,6 +1,6 @@
 # LSTM Finance 💸🤖
 
-Cashew adalah aplikasi manajemen keuangan pribadi premium yang menggabungkan kemudahan pencatatan transaksi dengan kecerdasan buatan (**LSTM - Long Short-Term Memory**) untuk memprediksi pengeluaran di masa depan.
+lSTM-Finance adalah aplikasi manajemen keuangan pribadi premium yang menggabungkan kemudahan pencatatan transaksi dengan kecerdasan buatan (**LSTM - Long Short-Term Memory**) untuk memprediksi pengeluaran di masa depan.
 
 ## 🌟 Fitur Utama
 
