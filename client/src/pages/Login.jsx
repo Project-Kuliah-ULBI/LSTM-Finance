@@ -48,6 +48,12 @@ const Login = ({ onLogin }) => {
       localStorage.setItem("userEmail", user.email);
       localStorage.setItem("isLoggedIn", "true");
 
+      // TAMBAHKAN INI: Simpan User ID asli dari database
+      if (response.data.user && response.data.user.id) {
+        localStorage.setItem("userId", response.data.user.id);
+        console.log("User ID disimpan:", response.data.user.id);
+      }
+
       onLogin();
       navigate("/");
     } catch (error) {
@@ -73,6 +79,8 @@ const Login = ({ onLogin }) => {
       // Simpan data user dari backend ke LocalStorage
       localStorage.setItem("token", res.data.token || "google-auth");
       localStorage.setItem("user_id", res.data.user_id);
+      const actualId = res.data.user_id || res.data.id;
+      localStorage.setItem("userId", actualId);
       localStorage.setItem("userName", res.data.name);
       localStorage.setItem("userEmail", res.data.email);
       localStorage.setItem("isLoggedIn", "true");

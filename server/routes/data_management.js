@@ -32,7 +32,7 @@ router.get('/export/:user_id', async (req, res) => {
       WHERE t.user_id = $1
       ORDER BY t.transaction_date DESC
     `;
-    
+
     const result = await pool.query(query, [user_id]);
 
     if (result.rows.length === 0) {
@@ -55,91 +55,137 @@ router.get('/export/:user_id', async (req, res) => {
   }
 });
 
+// Helper Function untuk mencari header yang paling cocok
+const findHeader = (row, keywords) => {
+  const headers = Object.keys(row);
+  // Cari header yang mengandung salah satu kata kunci
+  return headers.find(h =>
+    keywords.some(k => h.toLowerCase().includes(k.toLowerCase()))
+  );
+};
+
 // ==========================================
-// 2. FITUR IMPOR (Upload CSV)
+// 2. FITUR IMPOR FLEKSIBEL (Smart Import)
 // ==========================================
 router.post('/import/:user_id', upload.single('file'), async (req, res) => {
   const { user_id } = req.params;
   const results = [];
 
-  // Jika tidak ada file
   if (!req.file) {
     return res.status(400).send('Silakan upload file CSV!');
   }
 
-  // 1. Baca file CSV yang diupload
   fs.createReadStream(req.file.path)
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', async () => {
-      
-      // Hapus file sementara setelah dibaca
       fs.unlinkSync(req.file.path);
 
       try {
         let successCount = 0;
+        let skipCount = 0;
 
-        // 2. Loop setiap baris data CSV
+        // Definisi Keyword untuk Pencocokan Kolom Otomatis
+        const mappingKeys = {
+          tanggal: ['tanggal', 'date', 'tgl', 'time', 'waktu', 'created'],
+          judul: ['judul', 'title', 'keterangan', 'description', 'memo', 'note'],
+          nominal: ['nominal', 'amount', 'total', 'biaya', 'value', 'harga'],
+          tipe: ['tipe', 'type', 'status', 'flow', 'kind'],
+          kategori: ['kategori', 'category', 'group', 'jenis'],
+          dompet: ['dompet', 'wallet', 'account', 'rekening', 'sumber']
+        };
+
         for (const row of results) {
-          // Mapping data CSV (Sesuaikan dengan header file CSV Anda)
-          // Asumsi Header CSV: Tanggal, Judul, Nominal, Tipe, Kategori, Dompet
-          const tanggal = row['Tanggal']; 
-          const judul = row['Judul'];
-          const nominal = row['Nominal'];
-          const tipe = row['Tipe']; // INCOME / EXPENSE
-          const namaKategori = row['Kategori'];
-          const namaDompet = row['Dompet'];
+          // 1. Identifikasi Kolom secara dinamis
+          const colTanggal = findHeader(row, mappingKeys.tanggal);
+          const colJudul = findHeader(row, mappingKeys.judul);
+          const colNominal = findHeader(row, mappingKeys.nominal);
+          const colTipe = findHeader(row, mappingKeys.tipe);
+          const colKategori = findHeader(row, mappingKeys.kategori);
+          const colDompet = findHeader(row, mappingKeys.dompet);
 
-          // --- LOGIKA PENCARIAN ID (Smart Matching) ---
-          
-          // A. Cari ID Kategori berdasarkan Nama (Kalau gak ada, set NULL)
+          // Ambil datanya (jika kolom tidak ditemukan, beri nilai default/null)
+          const rawTanggal = row[colTanggal];
+          const rawJudul = row[colJudul] || 'Transaksi Impor';
+          let rawNominal = row[colNominal];
+          let rawTipe = (row[colTipe] || '').toUpperCase();
+          const rawKategori = row[colKategori];
+          const rawDompet = row[colDompet];
+
+          // 2. Validasi Minimal (Tanggal & Nominal harus ada)
+          if (!rawTanggal || !rawNominal) {
+            skipCount++;
+            continue;
+          }
+
+          // Bersihkan Nominal (Hapus Rp, titik, koma jika ada)
+          const nominal = parseFloat(rawNominal.replace(/[^0-9.-]+/g, ""));
+
+          // Normalisasi Tipe (Cari kata 'masuk' atau 'in' untuk INCOME)
+          let tipe = 'EXPENSE';
+          if (rawTipe.includes('IN') || rawTipe.includes('MASUK') || rawTipe.includes('PEMASUKAN')) {
+            tipe = 'INCOME';
+          }
+
+          // --- LOGIKA PENCARIAN ID ---
+
+          // Cari Kategori ID
           const catRes = await pool.query(
-            'SELECT category_id FROM categories WHERE user_id = $1 AND name ILIKE $2 LIMIT 1', 
-            [user_id, namaKategori]
+            'SELECT category_id FROM categories WHERE user_id = $1 AND name ILIKE $2 LIMIT 1',
+            [user_id, `%${rawKategori}%`]
           );
           const category_id = catRes.rows.length > 0 ? catRes.rows[0].category_id : null;
 
-          // B. Cari ID Dompet berdasarkan Nama (Kalau gak ada, pakai Dompet Tunai default)
+          // Cari Dompet ID
           let account_id;
           const accRes = await pool.query(
             'SELECT account_id FROM accounts WHERE user_id = $1 AND account_name ILIKE $2 LIMIT 1',
-            [user_id, namaDompet]
+            [user_id, `%${rawDompet}%`]
           );
-          
+
           if (accRes.rows.length > 0) {
             account_id = accRes.rows[0].account_id;
           } else {
-            // Fallback: Cari dompet tunai milik user ini
+            // Default ke dompet CASH milik user
             const defaultAcc = await pool.query(
-                "SELECT account_id FROM accounts WHERE user_id = $1 AND account_type = 'CASH' LIMIT 1", 
-                [user_id]
+              "SELECT account_id FROM accounts WHERE user_id = $1 AND account_type = 'CASH' LIMIT 1",
+              [user_id]
             );
             account_id = defaultAcc.rows.length > 0 ? defaultAcc.rows[0].account_id : null;
           }
 
-          // C. Jika Dompet ditemukan, Insert Transaksi
+          // 3. Eksekusi ke DB jika ID dompet ditemukan
           if (account_id) {
             await pool.query(
               `INSERT INTO transactions (user_id, account_id, category_id, title, amount, type, transaction_date)
                VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-              [user_id, account_id, category_id, judul, nominal, tipe, tanggal]
+              [user_id, account_id, category_id, rawJudul, nominal, tipe, rawTanggal]
             );
 
-            // D. Update Saldo Dompet
-            const updateQuery = tipe === 'INCOME' 
+            // Update Saldo
+            const updateBalanceQuery = tipe === 'INCOME'
               ? 'UPDATE accounts SET balance = balance + $1 WHERE account_id = $2'
               : 'UPDATE accounts SET balance = balance - $1 WHERE account_id = $2';
-            await pool.query(updateQuery, [nominal, account_id]);
+            await pool.query(updateBalanceQuery, [nominal, account_id]);
 
             successCount++;
+          } else {
+            skipCount++;
           }
         }
 
-        res.json({ message: `Berhasil mengimpor ${successCount} data transaksi.` });
+        res.json({
+          message: `Proses selesai.`,
+          detail: {
+            berhasil: successCount,
+            dilewati: skipCount,
+            total_baris: results.length
+          }
+        });
 
       } catch (err) {
-        console.error('Error saat insert DB:', err.message);
-        res.status(500).json({ message: 'Gagal memproses data CSV', error: err.message });
+        console.error('Import Error:', err.message);
+        res.status(500).json({ message: 'Gagal memproses file CSV', error: err.message });
       }
     });
 });

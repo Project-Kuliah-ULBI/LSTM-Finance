@@ -145,24 +145,6 @@ const Dashboard = () => {
     }
   };
 
-  // --- PREDICT LOGIC ---
-  const getPrediction = async () => {
-    setIsPredicting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/api/forecast/${userId}`
-      );
-      setForecast(res.data);
-    } catch (err) {
-      console.error("Gagal prediksi");
-      alert("Data pengeluaran Anda belum cukup (Minimal 3 bulan terakhir).");
-    } finally {
-      setIsPredicting(false);
-    }
-  };
-
   // Update data saat filter berubah
   useEffect(() => {
     if (userId) {
@@ -334,109 +316,7 @@ const Dashboard = () => {
               </h3>
             </div>
           </div>
-
-          {/* --- AI FORECAST --- */}
-          <div
-            className="text-white rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden border border-gray-800 transition-all duration-500 group"
-            style={{
-              background: `linear-gradient(120deg, #111827 40%, ${currentColor}99 120%)`,
-            }}
-          >
-            {isPredicting && (
-              <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[2.5rem]">
-                <div className="w-full h-full bg-gradient-to-b from-transparent via-primary/20 to-transparent absolute -translate-y-full animate-[scan_2s_infinite] shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
-              </div>
-            )}
-
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-
-            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-              <div>
-                <h3 className="text-2xl font-bold flex items-center gap-3 text-white uppercase tracking-tight">
-                  <BrainCircuit
-                    className={`text-primary ${
-                      isPredicting ? "animate-spin" : ""
-                    }`}
-                    size={28}
-                  />{" "}
-                  Forecast
-                </h3>
-                <p className="text-gray-400 text-sm mt-2">
-                  Menganalisis riwayat 3 bulan Anda untuk memprediksi tren masa
-                  depan.
-                </p>
-              </div>
-              <div className="mt-4 md:mt-0 bg-black/40 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/10 flex items-center gap-2 backdrop-blur-md">
-                <Sparkles size={12} className="text-yellow-400" /> LSTM ENGINE
-              </div>
-            </div>
-
-            {isPredicting ? (
-              <div className="space-y-6 animate-pulse">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white/5 h-28 rounded-[2rem] border border-white/5 flex flex-col justify-center px-8">
-                    <div className="h-3 w-24 bg-white/20 rounded mb-4"></div>
-                    <div className="h-8 w-48 bg-white/20 rounded"></div>
-                  </div>
-                  <div className="bg-white/5 h-28 rounded-[2rem] border border-white/5 p-6 space-y-3">
-                    <div className="h-3 w-full bg-white/10 rounded"></div>
-                    <div className="h-3 w-full bg-white/10 rounded"></div>
-                    <div className="h-3 w-2/3 bg-white/10 rounded"></div>
-                  </div>
-                </div>
-                <p className="text-center text-xs font-bold text-primary animate-bounce">
-                  🤖 AI sedang menghitung pola pengeluaran...
-                </p>
-              </div>
-            ) : forecast ? (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-black/30 p-7 rounded-[2.2rem] border border-white/10 backdrop-blur-md shadow-inner">
-                    <span className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.2em]">
-                      Estimasi Pengeluaran
-                    </span>
-                    <h2 className="text-4xl font-black mt-3 tracking-tighter text-white">
-                      {formatRp(forecast.prediction_next_month)}
-                    </h2>
-                  </div>
-                  <div className="flex flex-col justify-center bg-white/5 p-7 rounded-[2.2rem] border border-white/5 relative group/item overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-20 group-hover/item:opacity-100 transition-opacity">
-                      <Sparkles size={20} />
-                    </div>
-                    <p className="text-sm font-medium leading-relaxed">
-                      ✨{" "}
-                      {forecast.message ||
-                        "Berdasarkan pola Anda, kami merekomendasikan untuk menabung lebih banyak bulan depan untuk mencapai stabilitas finansial."}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex justify-center">
-                  <button
-                    onClick={getPrediction}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all bg-white/5 px-4 py-2 rounded-full border border-white/5 hover:bg-white/10"
-                  >
-                    <RefreshCw size={12} /> Analisis Ulang
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="w-full bg-black/20 rounded-[2.5rem] border border-dashed border-white/10 flex flex-col items-center justify-center text-center p-12 backdrop-blur-sm">
-                <div className="p-5 bg-primary/10 rounded-full mb-6">
-                  <Activity className="text-primary animate-pulse" size={48} />
-                </div>
-                <p className="text-gray-100 text-lg font-bold mb-6">
-                  Analisis pola pengeluaran Anda dengan satu klik.
-                </p>
-                <button
-                  onClick={getPrediction}
-                  className="bg-white text-indigo-700 font-black px-12 py-4 rounded-2xl shadow-2xl hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em]"
-                >
-                  Mulai Prediksi AI
-                </button>
-              </div>
-            )}
-          </div>
-
+          
           {/* --- TRANSACTION CHART --- */}
           <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
             <div className="flex justify-between items-center mb-6">

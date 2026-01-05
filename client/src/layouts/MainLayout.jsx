@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { 
   LayoutGrid, Receipt, PieChart, PiggyBank, Clock, Calculator, 
-  ChevronRight, ChevronLeft, Settings, Wallet, Handshake, Menu, X 
+  ChevronRight, ChevronLeft, Settings, Wallet, Handshake, Menu, X , TrendingUp
 } from 'lucide-react';
 
 const MainLayout = () => {
@@ -31,6 +31,7 @@ const MainLayout = () => {
     { name: 'Utang Piutang', icon: <Handshake size={22} />, path: '/debts' },
     { name: 'Tujuan', icon: <PiggyBank size={22} />, path: '/goals' },
     { name: 'Jadwal', icon: <Clock size={22} />, path: '/scheduled' },
+    { name: 'Forecasting', icon: <TrendingUp size={22} />, path: '/forecasting' },
   ];
 
   return (

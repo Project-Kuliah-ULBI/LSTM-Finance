@@ -1,10 +1,7 @@
 flask
 flask-cors
 tensorflow
-numpy
 pandas
+numpy
+joblib
 scikit-learn
-
-Client_ID=1038636738852-gm249c5hdn11mduore9uv3aeekltgade.apps.googleusercontent.com
-
-Client_secret=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
