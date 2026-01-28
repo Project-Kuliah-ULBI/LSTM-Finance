@@ -1,4 +1,4 @@
-// Forecasting.jsx - Updated with Proper Side-by-Side Layout
+// Forecasting.jsx - FIXED VERSION (v2.1)
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
@@ -43,7 +43,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 const Forecasting = () => {
@@ -57,14 +57,14 @@ const Forecasting = () => {
     minRequired: 7,
   });
 
-  // Ambil user_id dari localStorage (Sesuai Dashboard.jsx)
-  const userId = localStorage.getItem("user_id");
+  // ✅ FIX: Gunakan useState untuk userId (bukan variabel biasa)
+  const [userId, setUserId] = useState(null);
 
   // Theme detection dari app-wide theme system
   const [isDark, setIsDark] = useState(
     () =>
       document.documentElement.classList.contains("dark") ||
-      localStorage.getItem("appMode") === "dark"
+      localStorage.getItem("appMode") === "dark",
   );
 
   useEffect(() => {
@@ -90,47 +90,102 @@ const Forecasting = () => {
     };
   }, []);
 
+  // ✅ FIX: Ambil userId dari localStorage menggunakan useEffect
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("user_id");
+    if (storedUserId) {
+      setUserId(storedUserId);
+      console.log("✅ User ID loaded:", storedUserId);
+    } else {
+      setError("User ID tidak ditemukan. Silakan login kembali.");
+      console.error("❌ User ID not found in localStorage");
+    }
+  }, []);
+
+  // ✅ FIX: Fetch stats data menggunakan userId dari state
+  useEffect(() => {
+    if (userId) {
+      fetchStatsData(userId);
+    }
+  }, [userId]);
+
   const formatRp = (num) => "Rp " + Number(num).toLocaleString("id-ID");
 
   const runForecasting = async () => {
-    // Jika sedang loading, jangan jalankan lagi (mencegah double click/loop)
     if (loading) return;
 
     setLoading(true);
     setError("");
 
     try {
-      const userId = localStorage.getItem("user_id");
+      // ✅ FIX: Gunakan userId dari state (bukan variabel biasa)
+      if (!userId) {
+        throw new Error("User ID tidak ditemukan");
+      }
+
       const res = await axios.get(
         `http://localhost:5000/api/forecast/analyze`,
         {
           params: { userId, mode: "weekly" },
-        }
+        },
       );
 
-      // Pastikan data yang diterima valid
       if (res.data && res.data.forecast) {
         setForecastData(res.data);
       } else {
         setError("Data prediksi tidak lengkap.");
       }
     } catch (err) {
-      setError("Gagal memproses prediksi AI.");
+      console.error("Forecast error:", err);
+      setError("Gagal memproses prediksi AI: " + err.message);
     } finally {
-      // Ini AKAN menghentikan spinner/animasi "Menganalisis"
       setLoading(false);
     }
   };
 
-  // Forecasting.jsx - Perbaikan useEffect
+  // ✅ FIX: Fetch stats data untuk status data historis
+  const fetchStatsData = async (userId) => {
+    try {
+      const statsRes = await axios.get(
+        `http://localhost:5000/api/forecast/stats`,
+        {
+          params: { userId },
+        },
+      );
+
+      const stats = statsRes.data.stats;
+      setDataStatus({
+        sufficient: stats.data_sufficiency.isSufficient,
+        transactionCount: stats.total_count,
+        minRequired: stats.data_sufficiency.minRequired,
+      });
+
+      console.log("✅ Stats data loaded:", stats);
+    } catch (err) {
+      console.error("Stats fetch error:", err);
+      setDataStatus({
+        sufficient: false,
+        transactionCount: 0,
+        minRequired: 7,
+      });
+    }
+  };
+
+  // ✅ FIX: Hapus useEffect yang bermasalah (ganti dengan useEffect di atas)
+  // useEffect(() => {
+  //   const userId = localStorage.getItem("user_id");  // ❌ INI YANG BERMASALAH!
+  //   if (userId) {
+  //     runForecasting();
+  //   }
+  // }, []);
+
+  // ✅ FIX: Jalankan forecasting saat userId tersedia
   useEffect(() => {
-    // Gunakan userId yang konsisten (user_id)
-    const userId = localStorage.getItem("user_id");
-    if (userId) {
+    if (userId && !forecastData && !loading) {
+      console.log("🚀 Running forecasting for user:", userId);
       runForecasting();
     }
-    // Kosongkan array [] agar hanya berjalan 1x saat page dibuka
-  }, []);
+  }, [userId]);
 
   // Konfigurasi Grafik Utama (Chart.js) menggunakan data dari app.py dengan CSS variables
   const mainChartData = useMemo(() => {
@@ -327,8 +382,8 @@ const Forecasting = () => {
                     ? "text-white shadow-md"
                     : "text-white shadow-md"
                   : isDark
-                  ? "text-gray-400 hover:bg-gray-800/50 hover:text-gray-300"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                    ? "text-gray-400 hover:bg-gray-800/50 hover:text-gray-300"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
               }`}
               style={{
                 backgroundColor:
@@ -650,19 +705,19 @@ const Forecasting = () => {
                                 ? "bg-green-950 text-green-400"
                                 : "bg-green-100 text-green-700"
                               : forecastData.metrics.r_squared >= 0.5
-                              ? isDark
-                                ? "bg-yellow-950 text-yellow-400"
-                                : "bg-yellow-100 text-yellow-700"
-                              : isDark
-                              ? "bg-orange-950 text-orange-400"
-                              : "bg-orange-100 text-orange-700"
+                                ? isDark
+                                  ? "bg-yellow-950 text-yellow-400"
+                                  : "bg-yellow-100 text-yellow-700"
+                                : isDark
+                                  ? "bg-orange-950 text-orange-400"
+                                  : "bg-orange-100 text-orange-700"
                           }`}
                         >
                           {forecastData.metrics.r_squared >= 0.7
                             ? "Bagus"
                             : forecastData.metrics.r_squared >= 0.5
-                            ? "Sedang"
-                            : "Perlu Lebih Data"}
+                              ? "Sedang"
+                              : "Perlu Lebih Data"}
                         </span>
                       </div>
                       <p
@@ -683,13 +738,13 @@ const Forecasting = () => {
                             forecastData.metrics.r_squared >= 0.7
                               ? "bg-green-500"
                               : forecastData.metrics.r_squared >= 0.5
-                              ? "bg-yellow-500"
-                              : "bg-orange-500"
+                                ? "bg-yellow-500"
+                                : "bg-orange-500"
                           }`}
                           style={{
                             width: `${Math.min(
                               forecastData.metrics.r_squared * 100,
-                              100
+                              100,
                             )}%`,
                           }}
                         ></div>
