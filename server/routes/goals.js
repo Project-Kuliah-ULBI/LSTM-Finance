@@ -14,14 +14,19 @@ router.get('/:user_id', async (req, res) => {
                 g.goal_id, 
                 g.name, 
                 g.target_amount, 
+                g.current_amount as manual_amount,
                 g.deadline, 
                 g.icon, 
+                g.priority,
                 g.created_at,
-                COALESCE(
-                    (SELECT SUM(amount) 
-                     FROM transactions 
-                     WHERE goal_id = g.goal_id AND type = 'INCOME'
-                    ), 0
+                (
+                    COALESCE(g.current_amount, 0) + 
+                    COALESCE(
+                        (SELECT SUM(amount) 
+                         FROM transactions 
+                         WHERE goal_id = g.goal_id AND type = 'INCOME'
+                        ), 0
+                    )
                 ) as current_amount
             FROM goals g
             WHERE g.user_id = $1
@@ -50,7 +55,7 @@ router.post('/', async (req, res) => {
     const newGoal = await pool.query(
       `INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, priority) 
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [user_id, name, target_amount, current_amount || 0, deadline, priority]
+      [user_id, name, target_amount, current_amount || 0, deadline || null, priority]
     );
 
     res.json(newGoal.rows[0]);
@@ -63,18 +68,27 @@ router.post('/', async (req, res) => {
 // PUT: Nabung / Update Goal
 router.put('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    // Kita bisa update nominal (nabung) atau data lain
+    const id = parseInt(req.params.id);
     const { name, target_amount, current_amount, deadline, priority } = req.body;
 
-    const updateGoal = await pool.query(
+    console.log(`[BACKEND] Updating goal ID ${id}:`, { name, target_amount, current_amount, deadline, priority });
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "ID Target tidak valid." });
+    }
+
+    const result = await pool.query(
       `UPDATE goals 
        SET name = $1, target_amount = $2, current_amount = $3, deadline = $4, priority = $5
        WHERE goal_id = $6 RETURNING *`,
-      [name, target_amount, current_amount, deadline, priority, id]
+      [name, target_amount, current_amount, deadline || null, priority, id]
     );
 
-    res.json(updateGoal.rows[0]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Target tidak ditemukan." });
+    }
+
+    res.json(result.rows[0]);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

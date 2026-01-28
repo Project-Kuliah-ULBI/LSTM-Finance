@@ -56,28 +56,43 @@ const Goals = () => {
   // --- CRUD HANDLER ---
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!formData.name || !formData.target_amount) {
+      alert("Mohon isi nama dan target dana.");
+      return;
+    }
+
+    console.log("[FRONTEND] handleSave started. editingId:", editingId);
+
     try {
+      const cleanTarget = String(formData.target_amount).replace(/[^0-9.]/g, "");
+      const cleanCurrent = String(formData.current_amount || "0").replace(/[^0-9.]/g, "");
+
       const payload = {
-        ...formData,
-        amount: formData.amount === "" ? 0 : Number(formData.amount),
-        current_amount:
-          formData.current_amount === "" ? 0 : Number(formData.current_amount),
+        name: formData.name.trim(),
+        target_amount: parseFloat(cleanTarget) || 0,
+        current_amount: parseFloat(cleanCurrent) || 0,
+        deadline: formData.deadline || null,
+        priority: formData.priority || "MEDIUM",
         user_id: userId,
       };
 
+      console.log("[FRONTEND] Sending payload:", payload);
+
       if (editingId) {
-        await axios.put(
-          `http://localhost:5000/api/goals/${editingId}`,
-          payload
-        );
+        const res = await axios.put(`http://localhost:5000/api/goals/${editingId}`, payload);
+        console.log("[FRONTEND] PUT response:", res.data);
       } else {
-        await axios.post("http://localhost:5000/api/goals", payload);
+        const res = await axios.post("http://localhost:5000/api/goals", payload);
+        console.log("[FRONTEND] POST response:", res.data);
       }
 
-      fetchGoals();
+      await fetchGoals();
       handleCloseModal();
+      alert("Berhasil disimpan!");
     } catch (error) {
-      alert("Gagal menyimpan tujuan.");
+      console.error("[FRONTEND] Save error:", error.response?.data || error.message);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message;
+      alert(`Gagal menyimpan: ${errorMsg}`);
     }
   };
 
@@ -93,11 +108,11 @@ const Goals = () => {
     if (goal) {
       setEditingId(goal.goal_id);
       setFormData({
-        name: goal.name,
-        target_amount: goal.target_amount,
-        current_amount: goal.current_amount,
+        name: goal.name || "",
+        target_amount: goal.target_amount ? String(goal.target_amount) : "",
+        current_amount: (goal.manual_amount !== undefined && goal.manual_amount !== null) ? String(goal.manual_amount) : "0",
         deadline: goal.deadline ? goal.deadline.split("T")[0] : "",
-        priority: goal.priority,
+        priority: goal.priority || "MEDIUM",
       });
     } else {
       setEditingId(null);
@@ -165,11 +180,10 @@ const Goals = () => {
 
                 <div className="flex items-center gap-4 mb-6">
                   <div
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${
-                      percent >= 100
-                        ? "bg-emerald-100 text-emerald-600"
-                        : "bg-blue-100 text-blue-600"
-                    }`}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${percent >= 100
+                      ? "bg-emerald-100 text-emerald-600"
+                      : "bg-blue-100 text-blue-600"
+                      }`}
                   >
                     {percent >= 100 ? <Trophy /> : <Target />}
                   </div>
@@ -179,7 +193,9 @@ const Goals = () => {
                     </h3>
                     <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
                       <Calendar size={12} />{" "}
-                      {new Date(goal.deadline).toLocaleDateString("id-ID")}
+                      {goal.deadline
+                        ? new Date(goal.deadline).toLocaleDateString("id-ID")
+                        : "Tanpa Tenggat"}
                     </div>
                   </div>
                 </div>
@@ -187,7 +203,10 @@ const Goals = () => {
                 {/* Progress Bar */}
                 <div className="mb-2 flex justify-between text-sm font-bold">
                   <span className="text-gray-500">Terkumpul</span>
-                  <span className="text-primary">{percent}%</span>
+                  <div className="text-right">
+                    <span className="text-primary block">{percent}%</span>
+                    <span className="text-[10px] text-gray-400">Rp {Number(goal.current_amount).toLocaleString("id-ID")}</span>
+                  </div>
                 </div>
                 <div className="w-full bg-gray-100 dark:bg-gray-700 h-3 rounded-full overflow-hidden mb-4">
                   <div
@@ -317,9 +336,8 @@ const Goals = () => {
                   </span>
                   <ChevronDown
                     size={20}
-                    className={`text-gray-400 transition-transform ${
-                      isPriorityOpen ? "rotate-180" : ""
-                    }`}
+                    className={`text-gray-400 transition-transform ${isPriorityOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </div>
 
@@ -361,7 +379,10 @@ const Goals = () => {
                 />
               </div>
 
-              <button className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl mt-4 shadow-lg shadow-primary/30 active:scale-[0.98] transition-all">
+              <button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl mt-4 shadow-lg shadow-primary/30 active:scale-[0.98] transition-all"
+              >
                 Simpan Target
               </button>
             </form>

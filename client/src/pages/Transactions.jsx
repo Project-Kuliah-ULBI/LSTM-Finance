@@ -14,7 +14,9 @@ import {
   PlusCircle,
   Calendar,
   Search,
-  Tag
+  Tag,
+  PieChart,
+  Target
 } from "lucide-react";
 import axios from "axios";
 
@@ -46,7 +48,7 @@ const Transactions = () => {
   const [openWalletDropdown, setOpenWalletDropdown] = useState(false);
   const [openBudgetDropdown, setOpenBudgetDropdown] = useState(false);
   const [openGoalDropdown, setOpenGoalDropdown] = useState(false);
-  
+
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCatName, setNewCatName] = useState("");
 
@@ -79,13 +81,13 @@ const Transactions = () => {
     try {
       const txRes = await axios.get(
         `http://localhost:5000/api/transactions/${userId}`, {
-          params: {
-            page: page,
-            limit: 10,
-            month: selectedMonth,
-            year: selectedYear
-          }
+        params: {
+          page: page,
+          limit: 10,
+          month: selectedMonth,
+          year: selectedYear
         }
+      }
       );
 
       const [walletRes, catRes, budgetRes, goalRes] = await Promise.all([
@@ -213,12 +215,12 @@ const Transactions = () => {
     }
   };
 
-  const filteredTransactions = Array.isArray(transactions) 
+  const filteredTransactions = Array.isArray(transactions)
     ? transactions.filter((t) => filterType === "ALL" || t.type === filterType)
     : [];
 
-  const currentCategories = Array.isArray(categories) 
-    ? categories.filter((c) => c.type === formData.type) 
+  const currentCategories = Array.isArray(categories)
+    ? categories.filter((c) => c.type === formData.type)
     : [];
 
   const getPageNumbers = () => {
@@ -228,18 +230,18 @@ const Transactions = () => {
     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
     if (endPage - startPage + 1 < maxPagesToShow) {
-        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
 
     for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
+      pages.push(i);
     }
     return pages;
   };
 
   return (
     <div className="pb-24 max-w-[1600px] w-full mx-auto animate-in fade-in duration-500 px-4 md:px-10 py-8">
-      
+
       {/* HEADER & FILTER */}
       <div className="flex flex-col xl:flex-row justify-between items-center mb-10 gap-6">
         <div className="w-full xl:w-auto">
@@ -252,28 +254,27 @@ const Transactions = () => {
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto bg-white dark:bg-[#1E1E1E] p-2 md:p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-          
+
           {/* --- PILIHAN BULAN & TAHUN --- */}
           <div className="flex items-center gap-2 w-full md:w-auto">
             {/* Dropdown Bulan */}
             <div className="relative flex-1 md:flex-none">
-              <button 
+              <button
                 onClick={() => { setIsMonthOpen(!isMonthOpen); setIsYearOpen(false); }}
                 className="w-full md:w-[130px] bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 flex items-center justify-between transition-all"
               >
                 {monthNames[selectedMonth - 1]}
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isMonthOpen ? "rotate-180" : ""}`} />
               </button>
-              
+
               {isMonthOpen && (
                 <div className="absolute top-full left-0 mt-2 w-40 bg-white dark:bg-[#2A2A2A] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
                   {monthNames.map((m, idx) => (
                     <div
                       key={m}
                       onClick={() => { setSelectedMonth(idx + 1); setIsMonthOpen(false); setCurrentPage(1); }}
-                      className={`px-4 py-3 text-xs font-bold cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex justify-between items-center ${
-                        selectedMonth === idx + 1 ? "text-primary bg-primary/5" : "text-gray-600 dark:text-gray-300"
-                      }`}
+                      className={`px-4 py-3 text-xs font-bold cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex justify-between items-center ${selectedMonth === idx + 1 ? "text-primary bg-primary/5" : "text-gray-600 dark:text-gray-300"
+                        }`}
                     >
                       {m}
                       {selectedMonth === idx + 1 && <Check size={14} />}
@@ -285,23 +286,22 @@ const Transactions = () => {
 
             {/* Dropdown Tahun */}
             <div className="relative flex-1 md:flex-none">
-              <button 
+              <button
                 onClick={() => { setIsYearOpen(!isYearOpen); setIsMonthOpen(false); }}
                 className="w-full md:w-[90px] bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 flex items-center justify-between transition-all"
               >
                 {selectedYear}
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isYearOpen ? "rotate-180" : ""}`} />
               </button>
-              
+
               {isYearOpen && (
                 <div className="absolute top-full left-0 mt-2 w-28 bg-white dark:bg-[#2A2A2A] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
                   {years.map((y) => (
                     <div
                       key={y}
                       onClick={() => { setSelectedYear(y); setIsYearOpen(false); setCurrentPage(1); }}
-                      className={`px-4 py-3 text-xs font-bold cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex justify-between items-center ${
-                        selectedYear === y ? "text-primary bg-primary/5" : "text-gray-600 dark:text-gray-300"
-                      }`}
+                      className={`px-4 py-3 text-xs font-bold cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex justify-between items-center ${selectedYear === y ? "text-primary bg-primary/5" : "text-gray-600 dark:text-gray-300"
+                        }`}
                     >
                       {y}
                       {selectedYear === y && <Check size={14} />}
@@ -320,11 +320,10 @@ const Transactions = () => {
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
-                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-                  filterType === type
-                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
+                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg transition-all ${filterType === type
+                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
               >
                 {type === "ALL" ? "Semua" : type === "INCOME" ? "Masuk" : "Keluar"}
               </button>
@@ -342,20 +341,20 @@ const Transactions = () => {
 
       {/* TABEL / LIST TRANSAKSI */}
       <div className="bg-white dark:bg-[#1E1E1E] rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden min-h-[500px] flex flex-col justify-between">
-        
+
         {isLoading ? (
           <div className="p-20 text-center text-gray-400 animate-pulse flex flex-col items-center">
             <div className="w-10 h-10 bg-gray-200 dark:bg-gray-800 rounded-full mb-4"></div>
             <p>Memuat data...</p>
           </div>
         ) : filteredTransactions.length === 0 ? (
-           <div className="p-20 text-center text-gray-400 flex flex-col items-center justify-center h-full">
-             <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-full mb-4">
-                <Search size={32} className="opacity-50" />
-             </div>
-             <p className="font-medium">Belum ada transaksi di bulan {monthNames[selectedMonth-1]} {selectedYear}.</p>
-             <button onClick={() => handleOpenModal(null)} className="mt-4 text-primary font-bold hover:underline">Tambah Sekarang</button>
-           </div>
+          <div className="p-20 text-center text-gray-400 flex flex-col items-center justify-center h-full">
+            <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-full mb-4">
+              <Search size={32} className="opacity-50" />
+            </div>
+            <p className="font-medium">Belum ada transaksi di bulan {monthNames[selectedMonth - 1]} {selectedYear}.</p>
+            <button onClick={() => handleOpenModal(null)} className="mt-4 text-primary font-bold hover:underline">Tambah Sekarang</button>
+          </div>
         ) : (
           <div>
             {/* Header Table (DESKTOP) */}
@@ -376,11 +375,10 @@ const Transactions = () => {
                   <div className="hidden md:grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-4 flex items-center gap-3">
                       <div
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
-                          tx.type === "INCOME"
-                            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                            : "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400"
-                        }`}
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${tx.type === "INCOME"
+                          ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                          : "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400"
+                          }`}
                       >
                         {tx.type === "INCOME" ? <ArrowDownCircle size={20} /> : <ArrowUpCircle size={20} />}
                       </div>
@@ -410,15 +408,14 @@ const Transactions = () => {
 
                     <div className="col-span-2 flex flex-col items-end gap-1 relative">
                       <span
-                        className={`font-black text-sm ${
-                          tx.type === "INCOME"
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
+                        className={`font-black text-sm ${tx.type === "INCOME"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                          }`}
                       >
                         {tx.type === "INCOME" ? "+" : "-"} {formatRp(tx.amount)}
                       </span>
-                      
+
                       <div className="absolute right-0 top-6 opacity-0 group-hover:opacity-100 transition-all flex gap-1 translate-y-2 group-hover:translate-y-0 bg-white dark:bg-[#2A2A2A] shadow-md p-1 rounded-lg border border-gray-100 dark:border-gray-700 z-10">
                         <button onClick={() => handleOpenModal(tx)} className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"><Pencil size={14} /></button>
                         <button onClick={() => handleDelete(tx.transaction_id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"><Trash2 size={14} /></button>
@@ -430,15 +427,14 @@ const Transactions = () => {
                   <div className="md:hidden flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          tx.type === "INCOME"
-                            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                            : "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400"
-                        }`}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tx.type === "INCOME"
+                          ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                          : "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400"
+                          }`}
                       >
                         {tx.type === "INCOME" ? <ArrowDownCircle size={18} /> : <ArrowUpCircle size={18} />}
                       </div>
-                      
+
                       <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">
                           {tx.title}
@@ -453,17 +449,16 @@ const Transactions = () => {
 
                     <div className="flex flex-col items-end shrink-0">
                       <span
-                        className={`font-bold text-sm ${
-                          tx.type === "INCOME"
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
+                        className={`font-bold text-sm ${tx.type === "INCOME"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                          }`}
                       >
                         {formatRp(tx.amount)}
                       </span>
                       <div className="flex gap-2 mt-1 opacity-60">
-                          <button onClick={() => handleOpenModal(tx)} className="text-blue-500 bg-blue-50 dark:bg-white/10 p-1 rounded"><Pencil size={12}/></button>
-                          <button onClick={() => handleDelete(tx.transaction_id)} className="text-red-500 bg-red-50 dark:bg-white/10 p-1 rounded"><Trash2 size={12}/></button>
+                        <button onClick={() => handleOpenModal(tx)} className="text-blue-500 bg-blue-50 dark:bg-white/10 p-1 rounded"><Pencil size={12} /></button>
+                        <button onClick={() => handleDelete(tx.transaction_id)} className="text-red-500 bg-red-50 dark:bg-white/10 p-1 rounded"><Trash2 size={12} /></button>
                       </div>
                     </div>
                   </div>
@@ -491,11 +486,10 @@ const Transactions = () => {
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                    currentPage === pageNum
-                      ? "bg-primary text-white shadow-lg shadow-primary/30"
-                      : "text-gray-600 hover:bg-white hover:text-primary hover:shadow-sm"
-                  }`}
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${currentPage === pageNum
+                    ? "bg-primary text-white shadow-lg shadow-primary/30"
+                    : "text-gray-600 hover:bg-white hover:text-primary hover:shadow-sm"
+                    }`}
                 >
                   {pageNum}
                 </button>
@@ -536,24 +530,22 @@ const Transactions = () => {
             {/* Body (Scrollable) */}
             <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-4">
               <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
-                
+
                 {/* Switch Type */}
                 <div className="grid grid-cols-2 gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, type: "EXPENSE", category_id: "", budget_id: null })}
-                    className={`py-2.5 rounded-lg font-bold text-xs transition-all ${
-                      formData.type === "EXPENSE" ? "bg-white dark:bg-gray-700 text-red-500 shadow-sm" : "text-gray-400"
-                    }`}
+                    className={`py-2.5 rounded-lg font-bold text-xs transition-all ${formData.type === "EXPENSE" ? "bg-white dark:bg-gray-700 text-red-500 shadow-sm" : "text-gray-400"
+                      }`}
                   >
                     Pengeluaran
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, type: "INCOME", category_id: "", goal_id: null })}
-                    className={`py-2.5 rounded-lg font-bold text-xs transition-all ${
-                      formData.type === "INCOME" ? "bg-white dark:bg-gray-700 text-emerald-500 shadow-sm" : "text-gray-400"
-                    }`}
+                    className={`py-2.5 rounded-lg font-bold text-xs transition-all ${formData.type === "INCOME" ? "bg-white dark:bg-gray-700 text-emerald-500 shadow-sm" : "text-gray-400"
+                      }`}
                   >
                     Pemasukan
                   </button>
@@ -600,29 +592,29 @@ const Transactions = () => {
                     </div>
                     {/* Isi Dropdown Kategori */}
                     {openCatDropdown && (
-                        <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto border border-gray-100 dark:border-gray-700 animate-in zoom-in-95">
-                           <div onClick={(e) => {e.stopPropagation(); setIsAddingCategory(!isAddingCategory);}} className="h-8 px-3 bg-primary/5 border-b dark:border-gray-700 cursor-pointer flex items-center gap-2 text-primary font-bold text-[10px]">
-                              <PlusCircle size={14} /> <span>{isAddingCategory ? "Batal" : "Tambah"}</span>
-                           </div>
-                           {isAddingCategory && (
-                              <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex items-center gap-1">
-                                 <input type="text" autoFocus placeholder="Nama..." value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="w-full bg-white dark:bg-gray-700 px-2 py-1 rounded text-xs dark:text-white outline-none border focus:border-primary"/>
-                                 <button type="button" onClick={handleAddCustomCategory} className="bg-primary text-white p-1 rounded hover:bg-primary/90 shrink-0"><Check size={14} /></button>
-                              </div>
-                           )}
-                           {currentCategories.map((c) => (
-                              <div key={c.category_id} onClick={() => { setFormData({ ...formData, category_id: c.category_id }); setOpenCatDropdown(false); }} className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center border-b last:border-0 dark:border-gray-800 text-xs">
-                                 <span className={String(formData.category_id) === String(c.category_id) ? "text-primary font-bold" : "dark:text-gray-200"}>{c.name}</span>
-                              </div>
-                           ))}
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl z-[100] max-h-40 overflow-y-auto border border-gray-100 dark:border-gray-700 animate-in zoom-in-95">
+                        <div onClick={(e) => { e.stopPropagation(); setIsAddingCategory(!isAddingCategory); }} className="h-8 px-3 bg-primary/5 border-b dark:border-gray-700 cursor-pointer flex items-center gap-2 text-primary font-bold text-[10px]">
+                          <PlusCircle size={14} /> <span>{isAddingCategory ? "Batal" : "Tambah"}</span>
                         </div>
+                        {isAddingCategory && (
+                          <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex items-center gap-1">
+                            <input type="text" autoFocus placeholder="Nama..." value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="w-full bg-white dark:bg-gray-700 px-2 py-1 rounded text-xs dark:text-white outline-none border focus:border-primary" />
+                            <button type="button" onClick={handleAddCustomCategory} className="bg-primary text-white p-1 rounded hover:bg-primary/90 shrink-0"><Check size={14} /></button>
+                          </div>
+                        )}
+                        {currentCategories.map((c) => (
+                          <div key={c.category_id} onClick={() => { setFormData({ ...formData, category_id: c.category_id }); setOpenCatDropdown(false); }} className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center border-b last:border-0 dark:border-gray-800 text-xs">
+                            <span className={String(formData.category_id) === String(c.category_id) ? "text-primary font-bold" : "dark:text-gray-200"}>{c.name}</span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
 
                   <div className="space-y-1 relative">
                     <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Dompet</label>
                     <div
-                      onClick={() => { setOpenWalletDropdown(!openWalletDropdown); setOpenCatDropdown(false); }}
+                      onClick={() => { setOpenWalletDropdown(!openWalletDropdown); setOpenCatDropdown(false); setOpenBudgetDropdown(false); setOpenGoalDropdown(false); }}
                       className="w-full bg-gray-50 dark:bg-gray-800 h-[45px] px-3 rounded-xl cursor-pointer flex justify-between items-center border border-transparent hover:border-primary/30"
                     >
                       <span className="font-medium dark:text-white truncate text-xs">
@@ -632,16 +624,92 @@ const Transactions = () => {
                     </div>
                     {/* Isi Dropdown Dompet */}
                     {openWalletDropdown && (
-                        <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto border border-gray-100 dark:border-gray-700 animate-in zoom-in-95">
-                          {wallets.map((w) => (
-                            <div key={w.account_id} onClick={() => { setFormData({ ...formData, account_id: w.account_id }); setOpenWalletDropdown(false); }} className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b last:border-0 dark:border-gray-800 text-xs">
-                              <span className={String(formData.account_id) === String(w.account_id) ? "text-primary font-bold" : "dark:text-gray-200"}>{w.account_name}</span>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl z-[100] max-h-40 overflow-y-auto border border-gray-100 dark:border-gray-700 animate-in zoom-in-95">
+                        {wallets.map((w) => (
+                          <div key={w.account_id} onClick={() => { setFormData({ ...formData, account_id: w.account_id }); setOpenWalletDropdown(false); }} className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b last:border-0 dark:border-gray-800 text-xs">
+                            <span className={String(formData.account_id) === String(w.account_id) ? "text-primary font-bold" : "dark:text-gray-200"}>{w.account_name}</span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
+
+                {/* Dropdown Goal (Hanya untuk Pemasukan) */}
+                {formData.type === "INCOME" && (
+                  <div className="space-y-1 relative">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Simpan untuk Target (Opsional)</label>
+                    <div
+                      onClick={() => { setOpenGoalDropdown(!openGoalDropdown); setOpenCatDropdown(false); setOpenWalletDropdown(false); }}
+                      className="w-full bg-gray-50 dark:bg-gray-800 h-[45px] px-3 rounded-xl cursor-pointer flex justify-between items-center border border-transparent hover:border-primary/30"
+                    >
+                      <span className="font-medium dark:text-white truncate text-xs">
+                        {userGoals.find((g) => String(g.goal_id) === String(formData.goal_id))?.name || "Tanpa Target"}
+                      </span>
+                      <Target size={16} className="text-gray-400" />
+                    </div>
+                    {/* Isi Dropdown Goals */}
+                    {openGoalDropdown && (
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl z-[100] max-h-40 overflow-y-auto border border-gray-100 dark:border-gray-700 animate-in zoom-in-95">
+                        <div
+                          onClick={() => { setFormData({ ...formData, goal_id: null }); setOpenGoalDropdown(false); }}
+                          className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-800 text-xs text-red-500 font-bold"
+                        >
+                          Tanpa Target
+                        </div>
+                        {userGoals.map((g) => (
+                          <div
+                            key={g.goal_id}
+                            onClick={() => { setFormData({ ...formData, goal_id: g.goal_id }); setOpenGoalDropdown(false); }}
+                            className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center border-b last:border-0 dark:border-gray-800 text-xs"
+                          >
+                            <span className={String(formData.goal_id) === String(g.goal_id) ? "text-primary font-bold" : "dark:text-gray-200"}>
+                              {g.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Dropdown Anggaran (Hanya untuk Pengeluaran) */}
+                {formData.type === "EXPENSE" && (
+                  <div className="space-y-1 relative">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Anggaran (Opsional)</label>
+                    <div
+                      onClick={() => { setOpenBudgetDropdown(!openBudgetDropdown); setOpenCatDropdown(false); setOpenWalletDropdown(false); }}
+                      className="w-full bg-gray-50 dark:bg-gray-800 h-[45px] px-3 rounded-xl cursor-pointer flex justify-between items-center border border-transparent hover:border-primary/30"
+                    >
+                      <span className="font-medium dark:text-white truncate text-xs">
+                        {userBudgets.find((b) => String(b.budget_id) === String(formData.budget_id))?.budget_name || "Tanpa Anggaran"}
+                      </span>
+                      <PieChart size={16} className="text-gray-400" />
+                    </div>
+                    {/* Isi Dropdown Anggaran */}
+                    {openBudgetDropdown && (
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl z-[100] max-h-40 overflow-y-auto border border-gray-100 dark:border-gray-700 animate-in zoom-in-95">
+                        <div
+                          onClick={() => { setFormData({ ...formData, budget_id: null }); setOpenBudgetDropdown(false); }}
+                          className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-800 text-xs text-red-500 font-bold"
+                        >
+                          Tanpa Anggaran
+                        </div>
+                        {userBudgets.map((b) => (
+                          <div
+                            key={b.budget_id}
+                            onClick={() => { setFormData({ ...formData, budget_id: b.budget_id }); setOpenBudgetDropdown(false); }}
+                            className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center border-b last:border-0 dark:border-gray-800 text-xs"
+                          >
+                            <span className={String(formData.budget_id) === String(b.budget_id) ? "text-primary font-bold" : "dark:text-gray-200"}>
+                              {b.budget_name} ({b.category_name})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Tanggal</label>
